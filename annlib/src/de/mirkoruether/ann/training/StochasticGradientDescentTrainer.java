@@ -1,9 +1,12 @@
-package de.mirkoruether.ann.net;
+package de.mirkoruether.ann.training;
 
+import de.mirkoruether.ann.NetworkLayer;
+import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
-import de.mirkoruether.ann.Util;
+import de.mirkoruether.util.Randomizer;
+import de.mirkoruether.util.Randomizer;
 import java.util.Objects;
 
 public class StochasticGradientDescentTrainer
@@ -27,7 +30,7 @@ public class StochasticGradientDescentTrainer
 
     public void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize)
     {
-        TrainingData[] shuffled = Util.shuffle(trainingData, TrainingData.class);
+        TrainingData[] shuffled = Randomizer.shuffle(trainingData, TrainingData.class);
         for(int i = 0; i < trainingData.length; i += batchSize)
         {
             TrainingData[] batch = new TrainingData[batchSize];

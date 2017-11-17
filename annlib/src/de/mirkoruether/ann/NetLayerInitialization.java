@@ -1,4 +1,4 @@
-package de.mirkoruether.ann.net;
+package de.mirkoruether.ann;
 
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;

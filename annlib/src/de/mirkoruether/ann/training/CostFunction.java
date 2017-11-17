@@ -1,4 +1,4 @@
-package de.mirkoruether.ann.net;
+package de.mirkoruether.ann.training;
 
 import de.mirkoruether.linalg.DVector;
 

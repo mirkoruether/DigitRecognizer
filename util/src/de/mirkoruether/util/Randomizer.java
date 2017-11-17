@@ -1,10 +1,10 @@
-package de.mirkoruether.ann;
+package de.mirkoruether.util;
 
 import java.util.Random;
 
-public class Util
+public class Randomizer
 {
-    private Util()
+    private Randomizer()
     {
     }
 

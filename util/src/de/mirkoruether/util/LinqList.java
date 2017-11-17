@@ -1,4 +1,4 @@
-package de.mirkoruether.ann;
+package de.mirkoruether.util;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
