@@ -1,11 +1,12 @@
 package de.mirkoruether.linalg;
 
+import java.util.Comparator;
 import org.jblas.DoubleMatrix;
 
 public class DVector extends DMatrix
 {
     /**
-     * Use 'new DMatrix(mat).toVectorReference()' instead.
+     * Use 'new DMatrix(mat) toVectorDuplicate()' instead.
      * @param rowVectorMatrix
      */
     protected DVector(DoubleMatrix rowVectorMatrix)
@@ -29,12 +30,12 @@ public class DVector extends DMatrix
 
     public double get(int index)
     {
-        return super.get(1, index);
+        return super.get(0, index);
     }
 
     public void put(int index, double value)
     {
-        super.put(1, index, value);
+        super.put(0, index, value);
     }
 
     public double[] toArray()
@@ -62,49 +63,49 @@ public class DVector extends DMatrix
     @Override
     public DVector add(DMatrix other)
     {
-        return super.add(other).toVectorReference();
+        return getDuplicate().addInPlace(other);
     }
 
     @Override
     public DVector addInPlace(DMatrix other)
     {
-        return super.addInPlace(other).toVectorReference();
+        return (DVector)super.addInPlace(other);
     }
 
     @Override
     public DVector sub(DMatrix other)
     {
-        return super.sub(other).toVectorReference();
+        return getDuplicate().subInPlace(other);
     }
 
     @Override
     public DVector subInPlace(DMatrix other)
     {
-        return super.subInPlace(other).toVectorReference();
+        return (DVector)super.subInPlace(other);
     }
 
     @Override
     public DVector elementWiseMul(DMatrix other)
     {
-        return super.elementWiseMul(other).toVectorReference();
+        return getDuplicate().elementWiseMulInPlace(other);
     }
 
     @Override
     public DVector elementWiseMulInPlace(DMatrix other)
     {
-        return super.elementWiseMulInPlace(other).toVectorReference();
+        return (DVector)super.elementWiseMulInPlace(other);
     }
 
     @Override
     public DVector scalarMul(double r)
     {
-        return super.scalarMul(r).toVectorReference();
+        return getDuplicate().scalarMulInPlace(r);
     }
 
     @Override
     public DVector scalarMulInPlace(double r)
     {
-        return super.scalarMulInPlace(r).toVectorReference();
+        return (DVector)super.scalarMulInPlace(r);
     }
 
     public DMatrix columnVectorDuplicate()
@@ -120,7 +121,7 @@ public class DVector extends DMatrix
     @Override
     public DVector getDuplicate()
     {
-        return super.getDuplicate().toVectorReference();
+        return new DVector(inner.dup());
     }
 
     public double innerProduct(DVector other)
@@ -131,5 +132,31 @@ public class DVector extends DMatrix
     public double norm()
     {
         return Math.sqrt(innerProduct(this));
+    }
+
+    public int indexOfMaxium()
+    {
+        return indexOfHighestRank((a, b) -> a > b ? 1 : -1);
+    }
+
+    public int indexOfMinimum()
+    {
+        return indexOfHighestRank((a, b) -> a < b ? 1 : -1);
+    }
+
+    public int indexOfHighestRank(Comparator<Double> com)
+    {
+        int index = 0;
+        double max = get(0);
+        for(int i = 1; i < getLength(); i++)
+        {
+            double cur = get(i);
+            if(com.compare(cur, max) > 0)
+            {
+                index = i;
+                max = cur;
+            }
+        }
+        return index;
     }
 }

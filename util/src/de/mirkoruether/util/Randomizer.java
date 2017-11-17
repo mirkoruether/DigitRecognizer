@@ -33,7 +33,7 @@ public class Randomizer
         @Override
         public int compareTo(ShuffleBox<?> o)
         {
-            return o.getWeight() - getWeight();
+            return getWeight() > o.getWeight() ? 1 : -1;
         }
 
         public T getContent()

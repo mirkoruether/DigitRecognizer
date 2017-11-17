@@ -1,7 +1,14 @@
 package de.mirkoruether.digitrecognizer;
 
+import de.mirkoruether.ann.ActivationFunction;
+import de.mirkoruether.ann.NetLayerInitialization;
+import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.ann.training.CostFunction;
+import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
+import de.mirkoruether.ann.training.TestDataSet;
+import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.linalg.DMatrix;
-import java.util.Random;
+import java.util.function.Supplier;
 
 public class Test
 {
@@ -9,57 +16,45 @@ public class Test
 
     public static void main(String[] args)
     {
-        DMatrix m1 = new DMatrix(new double[][]
+        int[] sizes = new int[]
         {
-            {
-                1, 2
-            },
-            {
-                3, 4
-            }
-        });
+            784, 30, 10
+        };
 
-        DMatrix m2 = new DMatrix(new double[][]
+        NeuralNetwork net = timeFunc("Net creation", () -> new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic(1.0)));
+
+        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(new CostFunction.Quadratic(), net);
+
+        TrainingData[] training = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
+        TrainingData[] testData = timeFunc("Test data loading", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));
+        TestDataSet test = new TestDataSet(testData, (o, s) -> s.get(o.indexOfMaxium()) == 1.0);
+
+        System.out.println(timeFunc("Epoch 0: Testing", () -> sgdt.test(test)).toString());
+
+        for(int i = 1; i <= 10; i++)
         {
-            {
-                5, 6
-            },
-            {
-                7, 8
-            }
-        });
+            timeFunc("Epoch " + i + ": Training", () -> sgdt.trainEpoch(training, 0.5, 10));
 
-        printMatrix(m1);
-        printMatrix(m2);
-        printMatrix(m1.matrixMul(m2));
-
-        time();
-
-        double[][] m3c = new double[2000][2000];
-        double[][] m4c = new double[m3c.length][m3c[0].length];
-        Random ran = new Random();
-        for(int i = 0; i < m3c.length; i++)
-        {
-            for(int j = 0; j < m3c[0].length; j++)
-            {
-                m3c[i][j] = ran.nextDouble();
-                m4c[i][j] = ran.nextDouble();
-            }
+            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
         }
-
-        DMatrix m3 = new DMatrix(m3c);
-        DMatrix m4 = new DMatrix(m4c);
-
-        timeMessage("MatrixCreation");
-
-        m3.matrixMul(m4);
-
-        timeMessage("JblasMatrixMultiplication");
     }
 
-    private static void timeMessage(String name)
+    private static void timeFunc(String name, Runnable func)
     {
-        System.out.println(name + ": " + time() + "ms elapsed");
+        timeFunc(name, () ->
+         {
+             func.run();
+             return new Object();
+         });
+    }
+
+    private static <T> T timeFunc(String name, Supplier<T> func)
+    {
+        System.out.println(name + " started.");
+        time();
+        T result = func.get();
+        System.out.println(name + " finished. " + (double)time() / 1000 + "s elapsed");
+        return result;
     }
 
     private static long time()

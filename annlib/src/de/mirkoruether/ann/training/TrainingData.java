@@ -5,12 +5,12 @@ import de.mirkoruether.linalg.DVector;
 public class TrainingData
 {
     private DVector input;
-    private DVector solutions;
+    private DVector solution;
 
     public TrainingData(DVector input, DVector solutions)
     {
         this.input = input;
-        this.solutions = solutions;
+        this.solution = solutions;
     }
 
     public DVector getInput()
@@ -23,13 +23,13 @@ public class TrainingData
         this.input = input;
     }
 
-    public DVector getSolutions()
+    public DVector getSolution()
     {
-        return solutions;
+        return solution;
     }
 
-    public void setSolutions(DVector solutions)
+    public void setSolution(DVector solution)
     {
-        this.solutions = solutions;
+        this.solution = solution;
     }
 }

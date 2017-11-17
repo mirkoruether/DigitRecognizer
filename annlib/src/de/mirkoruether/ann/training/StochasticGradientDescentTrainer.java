@@ -6,7 +6,6 @@ import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
 import de.mirkoruether.util.Randomizer;
-import de.mirkoruether.util.Randomizer;
 import java.util.Objects;
 
 public class StochasticGradientDescentTrainer
@@ -18,6 +17,33 @@ public class StochasticGradientDescentTrainer
     {
         this.costs = Objects.requireNonNull(costs);
         this.net = Objects.requireNonNull(net);
+    }
+
+    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs)
+    {
+        TestResult[] results = new TestResult[epochs + 1];
+        results[0] = test(testData);
+
+        for(int i = 0; i < epochs; i++)
+        {
+            trainEpoch(trainingData, learningRate, batchSize);
+            results[i + 1] = test(testData);
+        }
+
+        return results;
+    }
+
+    public TestResult test(TestDataSet testData)
+    {
+        double costSum = 0.0;
+        int correct = 0;
+        for(TrainingData d : testData.getData())
+        {
+            DVector out = net.feedForward(d.getInput());
+            costSum += costs.calculateCosts(out, d.getSolution());
+            correct += testData.test(out, d.getSolution()) ? 1 : 0;
+        }
+        return new TestResult(testData.getLength(), correct, costSum / testData.getLength());
     }
 
     public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs)
@@ -53,7 +79,7 @@ public class StochasticGradientDescentTrainer
             {
                 DVector netOutput = net.feedForward(trainingData[x].getInput());
                 activationsInclInput[x] = getActivationsInclInput(trainingData[x].getInput());
-                errors[x] = calculateErrorVectors(netOutput, trainingData[x].getSolutions());
+                errors[x] = calculateErrorVectors(netOutput, trainingData[x].getSolution());
             }
 
             updateWeights(errors, activationsInclInput, learningRate);
@@ -81,19 +107,19 @@ public class StochasticGradientDescentTrainer
         return result;
     }
 
-    private DVector[] calculateErrorVectors(DVector netOutput, DVector solutions)
+    private DVector[] calculateErrorVectors(DVector netOutput, DVector solution)
     {
         DVector[] error = new DVector[net.getLayerCount()];
 
         int L = net.getLayerCount() - 1;
 
-        error[L] = costs.calculateGradient(netOutput, solutions)
+        error[L] = costs.calculateGradient(netOutput, solution)
                 .elementWiseMulInPlace(calculateActivationDerivativeAtLastWeightedInput(L));
 
-        for(int la = L - 1; la >= 0; la++)
+        for(int la = L - 1; la >= 0; la--)
         {
             error[la] = error[la + 1].matrixMul(net.getLayer(la + 1).getWeights().transpose())
-                    .toVectorReference()
+                    .toVectorDuplicate()
                     .elementWiseMulInPlace(calculateActivationDerivativeAtLastWeightedInput(la));
         }
 

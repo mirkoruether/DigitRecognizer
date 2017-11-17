@@ -21,7 +21,7 @@ public class NetworkLayer
 
     public NetworkLayer(DMatrix weights, DVector biases, ActivationFunction activationFunction)
     {
-        if(biases.getLength() != weights.getRowCount())
+        if(biases.getLength() != weights.getColumnCount())
         {
             throw new SizeException("row count of weights and length of biases differ");
         }
@@ -34,7 +34,7 @@ public class NetworkLayer
     public DVector feedForward(DVector in)
     {
         DVector weigthedInput = in.matrixMul(weights)
-                .toVectorReference()
+                .toVectorDuplicate()
                 .addInPlace(biases);
 
         if(learningMode)
@@ -51,12 +51,12 @@ public class NetworkLayer
 
     public int getInputSize()
     {
-        return weights.getColumnCount();
+        return weights.getRowCount();
     }
 
     public int getOutputSize()
     {
-        return weights.getRowCount();
+        return weights.getColumnCount();
     }
 
     public boolean isLearningMode()

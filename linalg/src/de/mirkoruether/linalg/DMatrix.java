@@ -68,14 +68,15 @@ public class DMatrix
 
     public DMatrix applyFunctionElementWiseInPlace(DFunction func)
     {
-        return mjBlasFunc(this, (a) ->
-                  {
-                      for(int i = 0; i < a.length; i++)
-                      {
-                          a.put(i, func.apply(a.get(i)));
-                      }
-                      return a;
-                  });
+        mjBlasFunc(this, (a) ->
+           {
+               for(int i = 0; i < a.length; i++)
+               {
+                   a.put(i, func.apply(a.get(i)));
+               }
+               return a;
+           });
+        return this;
     }
 
     public DMatrix add(DMatrix other)
@@ -86,7 +87,8 @@ public class DMatrix
     public DMatrix addInPlace(DMatrix other)
     {
         jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        return mjBlasFunc(this, other, (a, b) -> a.addi(b));
+        mjBlasFunc(this, other, (a, b) -> a.addi(b));
+        return this;
     }
 
     public DMatrix sub(DMatrix other)
@@ -97,7 +99,8 @@ public class DMatrix
     public DMatrix subInPlace(DMatrix other)
     {
         jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        return mjBlasFunc(this, other, (a, b) -> a.subi(b));
+        mjBlasFunc(this, other, (a, b) -> a.subi(b));
+        return this;
     }
 
     public DMatrix scalarMul(double r)
@@ -107,7 +110,8 @@ public class DMatrix
 
     public DMatrix scalarMulInPlace(double r)
     {
-        return mjBlasFunc(this, (a) -> a.muli(r));
+        mjBlasFunc(this, (a) -> a.muli(r));
+        return this;
     }
 
     public DMatrix elementWiseMul(DMatrix other)
@@ -117,7 +121,8 @@ public class DMatrix
 
     public DMatrix elementWiseMulInPlace(DMatrix other)
     {
-        return mjBlasFunc(this, other, (a, b) -> a.muli(b));
+        mjBlasFunc(this, other, (a, b) -> a.muli(b));
+        return this;
     }
 
     public DMatrix matrixMul(DMatrix other)
@@ -137,12 +142,12 @@ public class DMatrix
 
     public boolean isColumnVector()
     {
-        return getRowCount() == 1;
+        return getColumnCount() == 1;
     }
 
     public boolean isRowVector()
     {
-        return getColumnCount() == 1;
+        return getRowCount() == 1;
     }
 
     public void assertVector()
@@ -169,26 +174,30 @@ public class DMatrix
         }
     }
 
-    public DVector toVectorReference()
-    {
-        assertVector();
-        return new DVector(inner);
-    }
-
     public DVector toVectorDuplicate()
     {
-        assertVector();
-        return getDuplicate().toVectorReference();
+        if(isRowVector())
+        {
+            return new DVector(getInnerDuplicate());
+        }
+        else if(isColumnVector())
+        {
+            return new DVector(inner.transpose());
+        }
+        else
+        {
+            throw new SizeException("Matrix is no colum or row vector");
+        }
     }
 
     public DVector getRowAsVector(int row)
     {
-        return subMatrix(row, 1, 0, getColumnCount()).toVectorReference();
+        return subMatrix(row, 1, 0, getColumnCount()).toVectorDuplicate();
     }
 
     public DVector getColumnAsVector(int column)
     {
-        return subMatrix(0, getRowCount(), column, 1).toVectorReference();
+        return subMatrix(0, getRowCount(), column, 1).toVectorDuplicate();
     }
 
     public boolean isScalar()
