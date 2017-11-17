@@ -23,7 +23,7 @@ public class Test
 
         NeuralNetwork net = timeFunc("Net creation", () -> new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic(1.0)));
 
-        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(new CostFunction.Quadratic(), net);
+        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(new CostFunction.CrossEntropy(), net);
 
         TrainingData[] training = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
         TrainingData[] testData = timeFunc("Test data loading", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));
@@ -31,10 +31,15 @@ public class Test
 
         System.out.println(timeFunc("Epoch 0: Testing", () -> sgdt.test(test)).toString());
 
-        for(int i = 1; i <= 10; i++)
+        for(int i = 1; i <= 5; i++)
         {
-            timeFunc("Epoch " + i + ": Training", () -> sgdt.trainEpoch(training, 0.5, 10));
+            timeFunc("Epoch " + i + ": Training with learning rate 1", () -> sgdt.trainEpoch(training, 1, 10));
+            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
+        }
 
+        for(int i = 6; i <= 10; i++)
+        {
+            timeFunc("Epoch " + i + ": Training with learning rate 0.1", () -> sgdt.trainEpoch(training, 0.1, 10));
             System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
         }
     }

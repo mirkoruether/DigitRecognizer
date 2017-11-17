@@ -125,6 +125,17 @@ public class DMatrix
         return this;
     }
 
+    public DMatrix elementWiseDiv(DMatrix other)
+    {
+        return getDuplicate().elementWiseDivInPlace(other);
+    }
+
+    public DMatrix elementWiseDivInPlace(DMatrix other)
+    {
+        mjBlasFunc(this, other, (a, b) -> a.divi(b));
+        return this;
+    }
+
     public DMatrix matrixMul(DMatrix other)
     {
         return mjBlasFunc(this, other, (a, b) -> a.mmul(b));
@@ -422,5 +433,28 @@ public class DMatrix
     private static DoubleMatrix innerOrNull(DMatrix m)
     {
         return m == null ? null : m.getInnerReference();
+    }
+
+    public static DMatrix ones(int rows, int columns)
+    {
+        DMatrix mat = new DMatrix(rows, columns);
+        for(int row = 0; row < rows; row++)
+        {
+            for(int column = 0; column < columns; column++)
+            {
+                mat.put(row, column, 1);
+            }
+        }
+        return mat;
+    }
+
+    public static DMatrix identity(int size)
+    {
+        DMatrix mat = new DMatrix(size, size);
+        for(int i = 0; i < size; i++)
+        {
+            mat.put(i, i, 1);
+        }
+        return mat;
     }
 }

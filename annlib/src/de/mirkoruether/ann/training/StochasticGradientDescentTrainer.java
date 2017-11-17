@@ -113,8 +113,7 @@ public class StochasticGradientDescentTrainer
 
         int L = net.getLayerCount() - 1;
 
-        error[L] = costs.calculateGradient(netOutput, solution)
-                .elementWiseMulInPlace(calculateActivationDerivativeAtLastWeightedInput(L));
+        error[L] = costs.calculateErrorOfLastLayer(netOutput, solution, calculateActivationDerivativeAtLastWeightedInput(L));
 
         for(int la = L - 1; la >= 0; la--)
         {

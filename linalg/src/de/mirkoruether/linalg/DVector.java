@@ -97,6 +97,18 @@ public class DVector extends DMatrix
     }
 
     @Override
+    public DVector elementWiseDiv(DMatrix other)
+    {
+        return getDuplicate().elementWiseDivInPlace(other);
+    }
+
+    @Override
+    public DVector elementWiseDivInPlace(DMatrix other)
+    {
+        return (DVector)super.elementWiseDivInPlace(other);
+    }
+
+    @Override
     public DVector scalarMul(double r)
     {
         return getDuplicate().scalarMulInPlace(r);
@@ -158,5 +170,10 @@ public class DVector extends DMatrix
             }
         }
         return index;
+    }
+
+    public static DVector ones(int length)
+    {
+        return DMatrix.ones(1, length).toVectorDuplicate();
     }
 }
