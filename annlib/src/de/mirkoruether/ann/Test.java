@@ -1,5 +1,6 @@
 package de.mirkoruether.ann;
 
+import de.mirkoruether.linalg.DMatrix;
 import java.util.Random;
 
 public class Test

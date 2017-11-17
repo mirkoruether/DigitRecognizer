@@ -1,4 +1,4 @@
-package de.mirkoruether.ann;
+package de.mirkoruether.linalg;
 
 public interface DFunction
 {

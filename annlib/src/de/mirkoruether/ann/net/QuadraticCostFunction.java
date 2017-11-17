@@ -1,6 +1,6 @@
 package de.mirkoruether.ann.net;
 
-import de.mirkoruether.ann.DVector;
+import de.mirkoruether.linalg.DVector;
 import org.jblas.exceptions.SizeException;
 
 public class QuadraticCostFunction implements CostFunction

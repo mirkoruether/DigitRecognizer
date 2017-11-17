@@ -1,8 +1,8 @@
 package de.mirkoruether.ann.net;
 
-import de.mirkoruether.ann.DFunction;
-import de.mirkoruether.ann.DMatrix;
-import de.mirkoruether.ann.DVector;
+import de.mirkoruether.linalg.DFunction;
+import de.mirkoruether.linalg.DMatrix;
+import de.mirkoruether.linalg.DVector;
 import de.mirkoruether.ann.Util;
 import java.util.Objects;
 

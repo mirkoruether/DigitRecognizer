@@ -1,7 +1,7 @@
 package de.mirkoruether.ann.net;
 
-import de.mirkoruether.ann.DMatrix;
-import de.mirkoruether.ann.DVector;
+import de.mirkoruether.linalg.DMatrix;
+import de.mirkoruether.linalg.DVector;
 
 public interface NetLayerInitialization
 {

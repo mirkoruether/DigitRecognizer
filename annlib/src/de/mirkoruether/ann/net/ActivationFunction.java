@@ -1,6 +1,6 @@
 package de.mirkoruether.ann.net;
 
-import de.mirkoruether.ann.DFunction;
+import de.mirkoruether.linalg.DFunction;
 
 public class ActivationFunction
 {
