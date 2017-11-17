@@ -1,4 +1,4 @@
-package de.mirkoruether.ann;
+package de.mirkoruether.digitrecognizer;
 
 import de.mirkoruether.linalg.DMatrix;
 import java.util.Random;
