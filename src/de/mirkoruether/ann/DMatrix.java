@@ -78,23 +78,23 @@ public class DMatrix
                   });
     }
 
-    public DMatrix addMatrix(DMatrix other)
+    public DMatrix add(DMatrix other)
     {
-        return getDuplicate().addMatrixInPlace(other);
+        return getDuplicate().addInPlace(other);
     }
 
-    public DMatrix addMatrixInPlace(DMatrix other)
+    public DMatrix addInPlace(DMatrix other)
     {
         jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
         return mjBlasFunc(this, other, (a, b) -> a.addi(b));
     }
 
-    public DMatrix subMatrix(DMatrix other)
+    public DMatrix sub(DMatrix other)
     {
-        return getDuplicate().subMatrixInPlace(other);
+        return getDuplicate().subInPlace(other);
     }
 
-    public DMatrix subMatrixInPlace(DMatrix other)
+    public DMatrix subInPlace(DMatrix other)
     {
         jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
         return mjBlasFunc(this, other, (a, b) -> a.subi(b));

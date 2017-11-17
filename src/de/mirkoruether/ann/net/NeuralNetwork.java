@@ -51,4 +51,27 @@ public class NeuralNetwork
     {
         return layers;
     }
+
+    public int getLayerCount()
+    {
+        return layers.length;
+    }
+
+    public NetworkLayer getLayer(int index)
+    {
+        return layers[index];
+    }
+
+    public NetworkLayer getOutputLayer()
+    {
+        return layers[layers.length - 1];
+    }
+
+    public void setLearningMode(boolean b)
+    {
+        for(NetworkLayer l : layers)
+        {
+            l.setLearningMode(b);
+        }
+    }
 }

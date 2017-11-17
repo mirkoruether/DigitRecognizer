@@ -27,6 +27,16 @@ public class DVector extends DMatrix
         super(1, length);
     }
 
+    public double get(int index)
+    {
+        return super.get(1, index);
+    }
+
+    public void put(int index, double value)
+    {
+        super.put(1, index, value);
+    }
+
     public double[] toArray()
     {
         return inner.toArray();
@@ -49,28 +59,52 @@ public class DVector extends DMatrix
         return (DVector)super.applyFunctionElementWiseInPlace(func);
     }
 
-    public DVector addVector(DVector other)
+    @Override
+    public DVector add(DMatrix other)
     {
-        return getDuplicate().addVectorInPlace(other);
+        return super.add(other).toVectorReference();
     }
 
-    public DVector addVectorInPlace(DVector other)
+    @Override
+    public DVector addInPlace(DMatrix other)
     {
-        jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        DMatrix.jBlasExec(this, other, (a, b) -> a.addi(b));
-        return this;
+        return super.addInPlace(other).toVectorReference();
     }
 
-    public DVector subVector(DVector other)
+    @Override
+    public DVector sub(DMatrix other)
     {
-        return getDuplicate().addVectorInPlace(other);
+        return super.sub(other).toVectorReference();
     }
 
-    public DVector subVectorInPlace(DVector other)
+    @Override
+    public DVector subInPlace(DMatrix other)
     {
-        jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        DMatrix.jBlasExec(this, other, (a, b) -> a.subi(b));
-        return this;
+        return super.subInPlace(other).toVectorReference();
+    }
+
+    @Override
+    public DVector elementWiseMul(DMatrix other)
+    {
+        return super.elementWiseMul(other).toVectorReference();
+    }
+
+    @Override
+    public DVector elementWiseMulInPlace(DMatrix other)
+    {
+        return super.elementWiseMulInPlace(other).toVectorReference();
+    }
+
+    @Override
+    public DVector scalarMul(double r)
+    {
+        return super.scalarMul(r).toVectorReference();
+    }
+
+    @Override
+    public DVector scalarMulInPlace(double r)
+    {
+        return super.scalarMulInPlace(r).toVectorReference();
     }
 
     public DMatrix columnVectorDuplicate()

@@ -10,6 +10,10 @@ public class NetworkLayer
     private final DVector biases;
     private final ActivationFunction activationFunction;
 
+    private boolean learningMode = false;
+    private DVector lastActivation = null;
+    private DVector lastWeigthedInput = null;
+
     public NetworkLayer(int outputSize, int inputSize, NetLayerInitialization init, ActivationFunction activationFunction)
     {
         this(init.initWeights(outputSize, inputSize), init.initBiases(outputSize), activationFunction);
@@ -29,10 +33,20 @@ public class NetworkLayer
 
     public DVector feedForward(DVector in)
     {
-        return in.matrixMul(weights)
+        DVector weigthedInput = in.matrixMul(weights)
                 .toVectorReference()
-                .addVectorInPlace(biases)
-                .applyFunctionElementWiseInPlace(activationFunction.f);
+                .addInPlace(biases);
+
+        if(learningMode)
+        {
+            lastWeigthedInput = weigthedInput;
+            lastActivation = weigthedInput.applyFunctionElementWise(activationFunction.f);
+            return lastActivation.getDuplicate();
+        }
+        else
+        {
+            return weigthedInput.applyFunctionElementWiseInPlace(activationFunction.f);
+        }
     }
 
     public int getInputSize()
@@ -43,5 +57,45 @@ public class NetworkLayer
     public int getOutputSize()
     {
         return weights.getRowCount();
+    }
+
+    public boolean isLearningMode()
+    {
+        return learningMode;
+    }
+
+    public void setLearningMode(boolean learningMode)
+    {
+        this.learningMode = learningMode;
+        if(!learningMode)
+        {
+            lastActivation = null;
+            lastWeigthedInput = null;
+        }
+    }
+
+    public DMatrix getWeights()
+    {
+        return weights;
+    }
+
+    public DVector getBiases()
+    {
+        return biases;
+    }
+
+    public DVector getLastActivation()
+    {
+        return lastActivation;
+    }
+
+    public DVector getLastWeigthedInput()
+    {
+        return lastWeigthedInput;
+    }
+
+    public ActivationFunction getActivationFunction()
+    {
+        return activationFunction;
     }
 }
