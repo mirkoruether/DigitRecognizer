@@ -4,6 +4,7 @@ import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.ann.training.CostFunction;
+import de.mirkoruether.ann.training.CostFunctionRegularization;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TrainingData;
@@ -23,7 +24,7 @@ public class Test
 
         NeuralNetwork net = timeFunc("Net creation", () -> new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic(1.0)));
 
-        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(new CostFunction.CrossEntropy(), net);
+        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
 
         TrainingData[] training = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
         TrainingData[] testData = timeFunc("Test data loading", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));

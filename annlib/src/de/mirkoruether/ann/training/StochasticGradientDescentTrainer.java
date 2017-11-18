@@ -10,13 +10,20 @@ import java.util.Objects;
 
 public class StochasticGradientDescentTrainer
 {
-    private final CostFunction costs;
     private final NeuralNetwork net;
+    private final CostFunction costs;
+    private final CostFunctionRegularization reg;
 
-    public StochasticGradientDescentTrainer(CostFunction costs, NeuralNetwork net)
+    public StochasticGradientDescentTrainer(NeuralNetwork net, CostFunction costs, CostFunctionRegularization reg)
     {
         this.costs = Objects.requireNonNull(costs);
         this.net = Objects.requireNonNull(net);
+        this.reg = reg;
+    }
+
+    public StochasticGradientDescentTrainer(NeuralNetwork net, CostFunction costs)
+    {
+        this(net, costs, null);
     }
 
     public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs)
@@ -61,28 +68,28 @@ public class StochasticGradientDescentTrainer
         {
             TrainingData[] batch = new TrainingData[batchSize];
             System.arraycopy(shuffled, i, batch, 0, batchSize);
-            trainBatch(batch, learningRate);
+            trainBatch(batch, learningRate, trainingData.length);
         }
     }
 
-    public void trainBatch(TrainingData[] trainingData, double learningRate)
+    public void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize)
     {
         try
         {
             net.setLearningMode(true);
 
-            int batchSize = trainingData.length;
+            int batchSize = trainingDataBatch.length;
 
             DVector[][] errors = new DVector[batchSize][];
             DVector[][] activationsInclInput = new DVector[batchSize][];
             for(int x = 0; x < batchSize; x++)
             {
-                DVector netOutput = net.feedForward(trainingData[x].getInput());
-                activationsInclInput[x] = getActivationsInclInput(trainingData[x].getInput());
-                errors[x] = calculateErrorVectors(netOutput, trainingData[x].getSolution());
+                DVector netOutput = net.feedForward(trainingDataBatch[x].getInput());
+                activationsInclInput[x] = getActivationsInclInput(trainingDataBatch[x].getInput());
+                errors[x] = calculateErrorVectors(netOutput, trainingDataBatch[x].getSolution());
             }
 
-            updateWeights(errors, activationsInclInput, learningRate);
+            updateWeights(errors, activationsInclInput, learningRate, trainingDataSize);
             updateBiases(errors, learningRate);
         }
         catch(Exception ex)
@@ -132,7 +139,7 @@ public class StochasticGradientDescentTrainer
         return nl.getLastWeigthedInput().applyFunctionElementWise(activationFuncDerivative);
     }
 
-    private void updateWeights(DVector[][] errors, DVector[][] activationsInclInput, double learningRate)
+    private void updateWeights(DVector[][] errors, DVector[][] activationsInclInput, double learningRate, int trainingDataSize)
     {
         for(int la = 0; la < net.getLayerCount(); la++)
         {
@@ -152,8 +159,14 @@ public class StochasticGradientDescentTrainer
             // eta/m
             double factor = learningRate / errors.length;
 
-            net.getLayer(la).getWeights()
-                    .subInPlace(sum.scalarMulInPlace(factor));
+            DMatrix weights = net.getLayer(la).getWeights();
+
+            weights.subInPlace(sum.scalarMulInPlace(factor));
+
+            if(reg != null)
+            {
+                weights.subInPlace(reg.calculateWeightDecay(weights, learningRate, trainingDataSize));
+            }
         }
     }
 
