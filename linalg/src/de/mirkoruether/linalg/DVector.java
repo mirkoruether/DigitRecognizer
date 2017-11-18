@@ -17,7 +17,7 @@ public class DVector extends DMatrix
         assertRowVector();
     }
 
-    public DVector(double[] content)
+    public DVector(double... content)
     {
         super(new double[][]
         {

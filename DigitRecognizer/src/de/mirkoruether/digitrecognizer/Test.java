@@ -5,6 +5,7 @@ import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.ann.training.CostFunction;
 import de.mirkoruether.ann.training.CostFunctionRegularization;
+import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
@@ -16,7 +17,6 @@ import java.util.function.Supplier;
 
 public class Test
 {
-
     private static TrainingData[] training;
     private static TestDataSet test;
 
@@ -32,16 +32,28 @@ public class Test
         Supplier<StochasticGradientDescentTrainer> conf1 = () ->
         {
             NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
+            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.75);
         };
 
         Supplier<StochasticGradientDescentTrainer> conf2 = () ->
         {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic());
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.8);
+        };
+
+        Supplier<StochasticGradientDescentTrainer> conf3 = () ->
+        {
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.85);
+        };
+
+        Supplier<StochasticGradientDescentTrainer> conf0 = () ->
+        {
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
             return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
         };
 
-        compareConfigs(1, (e) -> 0.1, 10, 3, conf1, conf2);
+        compareConfigs(1, (e) -> 0.1, 10, 4, conf0, conf1, conf2, conf3);
     }
 
     @SafeVarargs
@@ -54,13 +66,13 @@ public class Test
         for(int i = 0; i < results.length; i++)
         {
             System.out.println();
-            System.out.printf("------ CONFIG %d -----%n", i + 1);
+            System.out.printf("------ CONFIG %d -----%n", i);
             System.out.println();
 
             results[i] = getAccuracyForConfig(epochs, learningRateFunc, batchSize, configs[i], iterations);
 
             System.out.println();
-            System.out.printf("-- END OF CONFIG %d --%n", i + 1);
+            System.out.printf("-- END OF CONFIG %d --%n", i);
             System.out.println();
         }
 
@@ -79,7 +91,7 @@ public class Test
                           epochs, learningRates, batchSize, iterations);
         for(int i = 0; i < results.length; i++)
         {
-            System.out.printf("Accuracy of configuration %d: %.4f%%%n", i + 1, results[i] * 100);
+            System.out.printf("Accuracy of configuration %d: %.4f%%%n", i, results[i] * 100);
         }
         System.out.println();
         System.out.println("--- END OF RESULT ---");
@@ -107,7 +119,7 @@ public class Test
         {
             double learningRate = learningRateFunc.apply(i);
             System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
-            timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.trainEpoch(training, learningRate, batchSize));
+            timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.train(training, learningRate, batchSize, 1));
         }
         TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(test));
         System.out.println(r.toString());

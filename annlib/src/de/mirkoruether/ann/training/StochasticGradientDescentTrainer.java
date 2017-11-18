@@ -11,8 +11,8 @@ import java.util.Objects;
 public class StochasticGradientDescentTrainer
 {
     private final NeuralNetwork net;
-    private final CostFunction costs;
-    private final CostFunctionRegularization reg;
+    private CostFunction costs;
+    private CostFunctionRegularization reg;
 
     public StochasticGradientDescentTrainer(NeuralNetwork net, CostFunction costs, CostFunctionRegularization reg)
     {
@@ -61,7 +61,7 @@ public class StochasticGradientDescentTrainer
         }
     }
 
-    public void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize)
+    protected void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize)
     {
         TrainingData[] shuffled = Randomizer.shuffle(trainingData, TrainingData.class);
         for(int i = 0; i < trainingData.length; i += batchSize)
@@ -72,7 +72,7 @@ public class StochasticGradientDescentTrainer
         }
     }
 
-    public void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize)
+    protected void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize)
     {
         try
         {
@@ -102,7 +102,7 @@ public class StochasticGradientDescentTrainer
         }
     }
 
-    private DVector[] getActivationsInclInput(DVector input)
+    protected DVector[] getActivationsInclInput(DVector input)
     {
         DVector[] result = new DVector[net.getLayerCount() + 1];
         result[0] = input;
@@ -114,7 +114,7 @@ public class StochasticGradientDescentTrainer
         return result;
     }
 
-    private DVector[] calculateErrorVectors(DVector netOutput, DVector solution)
+    protected DVector[] calculateErrorVectors(DVector netOutput, DVector solution)
     {
         DVector[] error = new DVector[net.getLayerCount()];
 
@@ -132,14 +132,14 @@ public class StochasticGradientDescentTrainer
         return error;
     }
 
-    private DVector calculateActivationDerivativeAtLastWeightedInput(int layer)
+    protected DVector calculateActivationDerivativeAtLastWeightedInput(int layer)
     {
         NetworkLayer nl = net.getLayer(layer);
         DFunction activationFuncDerivative = nl.getActivationFunction().f_derivative;
         return nl.getLastWeigthedInput().applyFunctionElementWise(activationFuncDerivative);
     }
 
-    private void updateWeights(DVector[][] errors, DVector[][] activationsInclInput, double learningRate, int trainingDataSize)
+    protected void updateWeights(DVector[][] errors, DVector[][] activationsInclInput, double learningRate, int trainingDataSize)
     {
         for(int la = 0; la < net.getLayerCount(); la++)
         {
@@ -159,18 +159,23 @@ public class StochasticGradientDescentTrainer
             // eta/m
             double factor = learningRate / errors.length;
 
-            DMatrix weights = net.getLayer(la).getWeights();
-
-            weights.subInPlace(sum.scalarMulInPlace(factor));
+            DMatrix decay = sum.scalarMulInPlace(factor);
 
             if(reg != null)
             {
-                weights.subInPlace(reg.calculateWeightDecay(weights, learningRate, trainingDataSize));
+                decay.addInPlace(reg.calculateWeightDecay(net.getLayer(la).getWeights(), learningRate, trainingDataSize));
             }
+
+            reduceWeigths(la, decay);
         }
     }
 
-    private void updateBiases(DVector[][] errors, double learningRate)
+    protected void reduceWeigths(int layer, DMatrix decayInclRegularization)
+    {
+        net.getLayer(layer).getWeights().subInPlace(decayInclRegularization);
+    }
+
+    protected void updateBiases(DVector[][] errors, double learningRate)
     {
         for(int la = 0; la < net.getLayerCount(); la++)
         {
@@ -187,5 +192,30 @@ public class StochasticGradientDescentTrainer
             net.getLayer(la).getBiases()
                     .subInPlace(sum.scalarMulInPlace(factor));
         }
+    }
+
+    public NeuralNetwork getNet()
+    {
+        return net;
+    }
+
+    public CostFunction getCosts()
+    {
+        return costs;
+    }
+
+    public void setCosts(CostFunction costs)
+    {
+        this.costs = costs;
+    }
+
+    public CostFunctionRegularization getReg()
+    {
+        return reg;
+    }
+
+    public void setReg(CostFunctionRegularization reg)
+    {
+        this.reg = reg;
     }
 }

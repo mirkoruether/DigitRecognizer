@@ -29,6 +29,11 @@ public class DMatrix implements Serializable
         inner = new DoubleMatrix(rows, cols);
     }
 
+    public DMatrix(Size size)
+    {
+        this(size.getRows(), size.getColumns());
+    }
+
     public DoubleMatrix getInnerReference()
     {
         return inner;
@@ -52,6 +57,11 @@ public class DMatrix implements Serializable
     public int getColumnCount()
     {
         return inner.columns;
+    }
+
+    public Size getSize()
+    {
+        return new Size(getRowCount(), getColumnCount());
     }
 
     public double get(int row, int column)
@@ -459,5 +469,37 @@ public class DMatrix implements Serializable
             mat.put(i, i, 1);
         }
         return mat;
+    }
+
+    public static class Size
+    {
+        private int rows;
+        private int columns;
+
+        public Size(int rows, int columns)
+        {
+            this.rows = rows;
+            this.columns = columns;
+        }
+
+        public int getRows()
+        {
+            return rows;
+        }
+
+        public void setRows(int rows)
+        {
+            this.rows = rows;
+        }
+
+        public int getColumns()
+        {
+            return columns;
+        }
+
+        public void setColumns(int columns)
+        {
+            this.columns = columns;
+        }
     }
 }
