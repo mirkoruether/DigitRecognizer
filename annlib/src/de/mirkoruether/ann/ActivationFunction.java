@@ -19,4 +19,9 @@ public class ActivationFunction
         return new ActivationFunction((x) -> 1 / (1 + Math.exp(-x / T)),
                                       (x) -> Math.exp(x / T) / (T * Math.pow(Math.exp(x / T) + 1.0, 2.0)));
     }
+
+    public static ActivationFunction logistic()
+    {
+        return logistic(1.0);
+    }
 }

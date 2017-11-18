@@ -7,68 +7,128 @@ import de.mirkoruether.ann.training.CostFunction;
 import de.mirkoruether.ann.training.CostFunctionRegularization;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
+import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.linalg.DMatrix;
+import de.mirkoruether.util.Stopwatch;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Test
 {
-    private static long timestamp = System.currentTimeMillis();
+
+    private static TrainingData[] training;
+    private static TestDataSet test;
 
     public static void main(String[] args)
     {
+        loadMNIST();
+
         int[] sizes = new int[]
         {
             784, 30, 10
         };
 
-        NeuralNetwork net = timeFunc("Net creation", () -> new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic(1.0)));
+        Supplier<StochasticGradientDescentTrainer> conf1 = () ->
+        {
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+            return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
+        };
 
-        StochasticGradientDescentTrainer sgdt = new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
+        Supplier<StochasticGradientDescentTrainer> conf2 = () ->
+        {
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.Gaussian(), ActivationFunction.logistic());
+            return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
+        };
 
-        TrainingData[] training = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
+        compareConfigs(1, (e) -> 0.1, 10, 3, conf1, conf2);
+    }
+
+    @SafeVarargs
+    private static void compareConfigs(int epochs, Function<Integer, Double> learningRateFunc,
+                                       int batchSize, int iterations,
+                                       Supplier<StochasticGradientDescentTrainer>... configs)
+    {
+        double[] results = new double[configs.length];
+
+        for(int i = 0; i < results.length; i++)
+        {
+            System.out.println();
+            System.out.printf("------ CONFIG %d -----%n", i + 1);
+            System.out.println();
+
+            results[i] = getAccuracyForConfig(epochs, learningRateFunc, batchSize, configs[i], iterations);
+
+            System.out.println();
+            System.out.printf("-- END OF CONFIG %d --%n", i + 1);
+            System.out.println();
+        }
+
+        String learningRates = "";
+        for(int i = 0; i < epochs; i++)
+        {
+            if(i > 0)
+                learningRates += ";";
+            learningRates += learningRateFunc.apply(i);
+        }
+
+        System.out.println();
+        System.out.println("------ RESULTS ------");
+        System.out.println();
+        System.out.printf("Conditions: epochs:%d, learning rates:{%s}, batchSize:%d, iterations per config:%d%n",
+                          epochs, learningRates, batchSize, iterations);
+        for(int i = 0; i < results.length; i++)
+        {
+            System.out.printf("Accuracy of configuration %d: %.4f%%%n", i + 1, results[i] * 100);
+        }
+        System.out.println();
+        System.out.println("--- END OF RESULT ---");
+        System.out.println();
+    }
+
+    private static double getAccuracyForConfig(int epochs, Function<Integer, Double> learningRateFunc, int batchSize,
+                                               Supplier<StochasticGradientDescentTrainer> sgdtSup, int iterations)
+    {
+        double sum = 0.0;
+        for(int i = 0; i < iterations; i++)
+        {
+            System.out.println("---Start of Iteration " + (i + 1) + "---");
+            StochasticGradientDescentTrainer sgdt = sgdtSup.get();
+
+            sum += trainAndTest(epochs, learningRateFunc, batchSize, sgdt);
+            System.out.println("---End of Iteration " + (i + 1) + "---");
+        }
+        return sum / iterations;
+    }
+
+    private static double trainAndTest(int epochs, Function<Integer, Double> learningRateFunc, int batchSize, StochasticGradientDescentTrainer sgdt)
+    {
+        for(int i = 0; i < epochs; i++)
+        {
+            double learningRate = learningRateFunc.apply(i);
+            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
+            timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.trainEpoch(training, learningRate, batchSize));
+        }
+        TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(test));
+        System.out.println(r.toString());
+        return r.getAccuracy();
+    }
+
+    private static void loadMNIST()
+    {
+        training = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
         TrainingData[] testData = timeFunc("Test data loading", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));
-        TestDataSet test = new TestDataSet(testData, (o, s) -> s.get(o.indexOfMaxium()) == 1.0);
-
-        System.out.println(timeFunc("Epoch 0: Testing", () -> sgdt.test(test)).toString());
-
-        for(int i = 1; i <= 5; i++)
-        {
-            timeFunc("Epoch " + i + ": Training with learning rate 1", () -> sgdt.trainEpoch(training, 1, 10));
-            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
-        }
-
-        for(int i = 6; i <= 10; i++)
-        {
-            timeFunc("Epoch " + i + ": Training with learning rate 0.1", () -> sgdt.trainEpoch(training, 0.1, 10));
-            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
-        }
+        test = new TestDataSet(testData, (o, s) -> s.get(o.indexOfMaxium()) == 1.0);
     }
 
     private static void timeFunc(String name, Runnable func)
     {
-        timeFunc(name, () ->
-         {
-             func.run();
-             return new Object();
-         });
+        Stopwatch.timeExecutionToStream(func, name, System.out);
     }
 
     private static <T> T timeFunc(String name, Supplier<T> func)
     {
-        System.out.println(name + " started.");
-        time();
-        T result = func.get();
-        System.out.println(name + " finished. " + (double)time() / 1000 + "s elapsed");
-        return result;
-    }
-
-    private static long time()
-    {
-        long curr = System.currentTimeMillis();
-        long result = curr - timestamp;
-        timestamp = curr;
-        return result;
+        return Stopwatch.timeExecutionToStream(func, name, System.out);
     }
 
     private static void printMatrix(DMatrix m)
