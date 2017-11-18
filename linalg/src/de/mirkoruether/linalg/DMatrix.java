@@ -1,5 +1,6 @@
 package de.mirkoruether.linalg;
 
+import java.io.Serializable;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -7,8 +8,10 @@ import java.util.function.Function;
 import org.jblas.DoubleMatrix;
 import org.jblas.exceptions.SizeException;
 
-public class DMatrix
+public class DMatrix implements Serializable
 {
+    private static final long serialVersionUID = 4110775618079402269L;
+
     protected final DoubleMatrix inner;
 
     protected DMatrix(DoubleMatrix matrix)

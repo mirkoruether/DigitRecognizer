@@ -1,5 +1,6 @@
 package de.mirkoruether.ann;
 
+import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
 import org.jblas.exceptions.SizeException;
 
@@ -73,5 +74,25 @@ public class NeuralNetwork
         {
             l.setLearningMode(b);
         }
+    }
+
+    public DVector[] getBiases()
+    {
+        DVector[] result = new DVector[layers.length];
+        for(int i = 0; i < result.length; i++)
+        {
+            result[i] = layers[i].getBiases();
+        }
+        return result;
+    }
+
+    public DMatrix[] getWeights()
+    {
+        DMatrix[] result = new DMatrix[layers.length];
+        for(int i = 0; i < result.length; i++)
+        {
+            result[i] = layers[i].getWeights();
+        }
+        return result;
     }
 }

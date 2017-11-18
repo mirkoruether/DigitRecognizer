@@ -5,6 +5,8 @@ import org.jblas.DoubleMatrix;
 
 public class DVector extends DMatrix
 {
+    private static final long serialVersionUID = 4463788698739255742L;
+
     /**
      * Use 'new DMatrix(mat) toVectorDuplicate()' instead.
      * @param rowVectorMatrix
