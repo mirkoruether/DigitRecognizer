@@ -5,8 +5,11 @@ import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.util.ParallelExecution;
 import de.mirkoruether.util.Randomizer;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 public class StochasticGradientDescentTrainer
 {
@@ -28,12 +31,17 @@ public class StochasticGradientDescentTrainer
 
     public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs)
     {
+        return ParallelExecution.inExecutorF((ex) -> trainAndTest(trainingData, testData, learningRate, batchSize, epochs, ex), -1);
+    }
+
+    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs, ExecutorService executer)
+    {
         TestResult[] results = new TestResult[epochs + 1];
         results[0] = test(testData);
 
         for(int i = 0; i < epochs; i++)
         {
-            trainEpoch(trainingData, learningRate, batchSize);
+            trainEpoch(trainingData, learningRate, batchSize, executer);
             results[i + 1] = test(testData);
         }
 
@@ -50,47 +58,52 @@ public class StochasticGradientDescentTrainer
             costSum += costs.calculateCosts(out, d.getSolution());
             correct += testData.test(out, d.getSolution()) ? 1 : 0;
         }
+
         return new TestResult(testData.getLength(), correct, costSum / testData.getLength());
     }
 
     public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs)
     {
+        ParallelExecution.inExecutor((ex) -> train(trainingData, learningRate, batchSize, epochs, ex), -1);
+    }
+
+    public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs, ExecutorService executer)
+    {
         for(int i = 0; i < epochs; i++)
         {
-            trainEpoch(trainingData, learningRate, batchSize);
+            trainEpoch(trainingData, learningRate, batchSize, executer);
         }
     }
 
-    protected void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize)
+    protected void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize, ExecutorService executer)
     {
         TrainingData[] shuffled = Randomizer.shuffle(trainingData, TrainingData.class);
         for(int i = 0; i < trainingData.length; i += batchSize)
         {
             TrainingData[] batch = new TrainingData[batchSize];
             System.arraycopy(shuffled, i, batch, 0, batchSize);
-            trainBatch(batch, learningRate, trainingData.length);
+            trainBatch(batch, learningRate, trainingData.length, executer);
         }
     }
 
-    protected void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize)
+    protected void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize, ExecutorService executer)
     {
         try
         {
             net.setLearningMode(true);
 
-            int batchSize = trainingDataBatch.length;
-
-            DVector[][] errors = new DVector[batchSize][];
-            DVector[][] activationsInclInput = new DVector[batchSize][];
-            for(int x = 0; x < batchSize; x++)
+            Function<TrainingData, LayerInfos> func = (x) ->
             {
-                DVector netOutput = net.feedForward(trainingDataBatch[x].getInput());
-                activationsInclInput[x] = getActivationsInclInput(trainingDataBatch[x].getInput());
-                errors[x] = calculateErrorVectors(netOutput, trainingDataBatch[x].getSolution());
-            }
+                DVector netOutput = net.feedForward(x.getInput());
+                return new LayerInfos(getActivationsInclInput(x.getInput()),
+                                      calculateErrorVectors(netOutput, x.getSolution()));
+            };
 
-            updateWeights(errors, activationsInclInput, learningRate, trainingDataSize);
-            updateBiases(errors, learningRate);
+            ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, LayerInfos.class, executer);
+            LayerInfos[] layerInfos = exec.get(trainingDataBatch);
+
+            updateWeights(layerInfos, learningRate, trainingDataSize);
+            updateBiases(layerInfos, learningRate);
         }
         catch(Exception ex)
         {
@@ -139,25 +152,25 @@ public class StochasticGradientDescentTrainer
         return nl.getLastWeigthedInput().applyFunctionElementWise(activationFuncDerivative);
     }
 
-    protected void updateWeights(DVector[][] errors, DVector[][] activationsInclInput, double learningRate, int trainingDataSize)
+    protected void updateWeights(LayerInfos[] layerInfos, double learningRate, int trainingDataSize)
     {
         for(int la = 0; la < net.getLayerCount(); la++)
         {
             // sum(x, a[x,l-1]T * delta[x,l])
-            DMatrix sum = activationsInclInput[0][la].transpose()
-                    .matrixMul(errors[0][la]);
+            DMatrix sum = layerInfos[0].getAct(la).transpose()
+                    .matrixMul(layerInfos[0].getError(la));
 
-            for(int x = 1; x < errors.length; x++)
+            for(int x = 1; x < layerInfos.length; x++)
             {
                 // a[x,l-1]T * delta[x,l]
-                DMatrix toAdd = activationsInclInput[x][la].transpose()
-                        .matrixMul(errors[x][la]);
+                DMatrix toAdd = layerInfos[x].getAct(la).transpose()
+                        .matrixMul(layerInfos[x].getError(la));
 
                 sum.addInPlace(toAdd);
             }
 
             // eta/m
-            double factor = learningRate / errors.length;
+            double factor = learningRate / layerInfos.length;
 
             DMatrix decay = sum.scalarMulInPlace(factor);
 
@@ -175,19 +188,19 @@ public class StochasticGradientDescentTrainer
         net.getLayer(layer).getWeights().subInPlace(decayInclRegularization);
     }
 
-    protected void updateBiases(DVector[][] errors, double learningRate)
+    protected void updateBiases(LayerInfos[] layerInfos, double learningRate)
     {
         for(int la = 0; la < net.getLayerCount(); la++)
         {
             // sum(x, delta[x,l])
-            DVector sum = errors[0][la].getDuplicate();
-            for(int x = 1; x < errors.length; x++)
+            DVector sum = layerInfos[0].getError(la).getDuplicate();
+            for(int x = 1; x < layerInfos.length; x++)
             {
-                sum.addInPlace(errors[x][la]);
+                sum.addInPlace(layerInfos[x].getError(la));
             }
 
             // eta/m
-            double factor = learningRate / errors.length;
+            double factor = learningRate / layerInfos.length;
 
             net.getLayer(la).getBiases()
                     .subInPlace(sum.scalarMulInPlace(factor));
@@ -217,5 +230,37 @@ public class StochasticGradientDescentTrainer
     public void setReg(CostFunctionRegularization reg)
     {
         this.reg = reg;
+    }
+
+    protected static class LayerInfos
+    {
+        private final DVector[] lastActivations;
+        private final DVector[] errors;
+
+        protected LayerInfos(DVector[] lastActivations, DVector[] errors)
+        {
+            this.lastActivations = lastActivations;
+            this.errors = errors;
+        }
+
+        public DVector[] getLastActivations()
+        {
+            return lastActivations;
+        }
+
+        public DVector[] getErrors()
+        {
+            return errors;
+        }
+
+        public DVector getError(int layer)
+        {
+            return errors[layer];
+        }
+
+        public DVector getAct(int layerPlusOne)
+        {
+            return lastActivations[layerPlusOne];
+        }
     }
 }

@@ -12,6 +12,7 @@ import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.linalg.DMatrix;
+import de.mirkoruether.util.ParallelExecution;
 import de.mirkoruether.util.Stopwatch;
 import java.io.File;
 import java.util.function.Function;
@@ -100,15 +101,18 @@ public class Test
 
     private static double trainAndTest(int epochs, Function<Integer, Double> learningRateFunc, int batchSize, StochasticGradientDescentTrainer sgdt)
     {
-        for(int i = 0; i < epochs; i++)
+        return ParallelExecution.inExecutorF((ex) ->
         {
-            double learningRate = learningRateFunc.apply(i);
-            System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
-            timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.train(training, learningRate, batchSize, 1));
-        }
-        TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(test));
-        System.out.println(r.toString());
-        return r.getAccuracy();
+            for(int i = 0; i < epochs; i++)
+            {
+                double learningRate = learningRateFunc.apply(i);
+                System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
+                timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.train(training, learningRate, batchSize, 1, ex));
+            }
+            TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(test));
+            System.out.println(r.toString());
+            return r.getAccuracy();
+        }, 20);
     }
 
     private static void loadMNIST()
