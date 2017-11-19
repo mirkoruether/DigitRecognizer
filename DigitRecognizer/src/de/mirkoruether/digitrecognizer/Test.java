@@ -2,6 +2,7 @@ package de.mirkoruether.digitrecognizer;
 
 import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetLayerInitialization;
+import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.ann.training.CostFunction;
 import de.mirkoruether.ann.training.CostFunctionRegularization;
@@ -12,6 +13,7 @@ import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.util.Stopwatch;
+import java.io.File;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -26,22 +28,17 @@ public class Test
 
         int[] sizes = new int[]
         {
-            784, 30, 10
+            784, 100, 10
         };
 
-        Supplier<StochasticGradientDescentTrainer> conf0 = () ->
-        {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
-        };
+        NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+        MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5.0), 0.7);
 
-        Supplier<StochasticGradientDescentTrainer> conf1 = () ->
-        {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.75);
-        };
+        trainAndTest(10, (e) -> 0.1, 10, trainer);
 
-        compareConfigs(5, (e) -> 0.1, 10, 1, conf0, conf1);
+        TestResult r = trainer.test(test);
+        File f = new File(String.format("net_%.2f_percent_accuracy.zip", r.getAccuracy() * 100.0).replace('.', '-'));
+        NetworkIO.saveNetworkData(net, f);
     }
 
     @SafeVarargs

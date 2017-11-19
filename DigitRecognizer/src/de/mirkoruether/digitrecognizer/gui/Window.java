@@ -40,6 +40,8 @@ public class Window extends JFrame
         tabs.add("Ziffererkennung", predictPanel);
         add(tabs);
 
+        setTitle(String.format(TITLEPATTEN, "Bereit"));
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         pack();
     }
@@ -73,7 +75,7 @@ public class Window extends JFrame
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, new CostFunction.CrossEntropy(),
                                                             new CostFunctionRegularization.L2(5.0), 0.75);
 
-        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.1, 10, 5));
+        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.3, 10, 1));
         System.out.println(timeFunc("Neuronales Netz wird getestet", () -> trainer.test(test)));
 
         return newNet;

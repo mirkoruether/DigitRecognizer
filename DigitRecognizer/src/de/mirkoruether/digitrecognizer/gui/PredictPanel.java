@@ -150,25 +150,14 @@ public class PredictPanel extends JPanel
         }
         catch(Exception ex)
         {
-
-        }
-    }
-
-    private void sleep(int ms)
-    {
-        try
-        {
-            Thread.sleep(ms);
-        }
-        catch(InterruptedException ex)
-        {
+            throw new RuntimeException("Exception in EventQueue", ex);
         }
     }
 
     public static class DrawPanel extends JPanel
     {
         private static final long serialVersionUID = 5630464123815946791L;
-        private static final int BRUSH_RADIUS = 30;
+        private static final int BRUSH_RADIUS = 20;
 
         private final Consumer<BufferedImage> predictionStart;
         private BufferedImage image;

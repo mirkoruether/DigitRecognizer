@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 
 public class DigitManipulator
 {
+    private static final int OFFSET_TO_IMAGE_BORDER = 35;
+
     public static DVector getAnnInput(BufferedImage im, Consumer<BufferedImage> con, int pause)
     {
         BufferedImage im28x28 = scaleDownTo28x28(moveToCenterAndScale(im, con, pause));
@@ -49,7 +51,6 @@ public class DigitManipulator
     {
         Graphics g;
         Point centerOfPixels = getCenterOfPixels(im);
-        Rectangle bounds = getContentBounds(im);
 
         letDraw(im, con, pause);
 
@@ -71,9 +72,9 @@ public class DigitManipulator
         int disY1 = (int)movedBounds.getMaxY() - heigth / 2;
         int maxDis = Math.max(Math.max(disX0, disX1), Math.max(disY0, disY1));
 
-        double scaleFactor = width / 2.0 / maxDis;
+        double scaleFactor = (width / 2.0 - OFFSET_TO_IMAGE_BORDER) / maxDis;
 
-        int offset = (int)((-maxDis + width / 2) * scaleFactor);
+        int offset = (int)((-maxDis + width / 2) * scaleFactor) - OFFSET_TO_IMAGE_BORDER;
 
         BufferedImage scaled = new BufferedImage(width, heigth, BufferedImage.TYPE_INT_ARGB);
         g = scaled.createGraphics();
@@ -180,7 +181,6 @@ public class DigitManipulator
     {
         BufferedImage result = im;
 
-//        result = scaleSmooth(result, 500, 500);
         result = scaleSmooth(result, 250, 250);
         result = scaleSmooth(result, 100, 100);
         result = scaleSmooth(result, 50, 50);
