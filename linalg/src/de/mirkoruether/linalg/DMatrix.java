@@ -149,9 +149,43 @@ public class DMatrix implements Serializable
         return this;
     }
 
-    public DMatrix matrixMul(DMatrix other)
+    public DMatrix matrixMulIt(DMatrix other)
+    {
+        int n = getRowCount();
+        int bn = other.getRowCount();
+        int bm = other.getColumnCount();
+
+        DMatrix C = new DMatrix(n, bm);
+
+        for(int i = 0; i < n; i++)
+        {
+            for(int k = 0; k < bn; k++)
+            {
+                for(int j = 0; j < bm; j++)
+                {
+                    C.put(i, j, C.get(i, j) + get(i, k) * other.get(k, j));
+                }
+            }
+        }
+        return C;
+    }
+
+    public DMatrix matrixMulBlas(DMatrix other)
     {
         return mjBlasFunc(this, other, (a, b) -> a.mmul(b));
+    }
+
+    public DMatrix matrixMul(DMatrix other)
+    {
+        long complexity = getColumnCount() * ((long)getRowCount()) * other.getColumnCount();
+        if(complexity > 1000000000)
+        {
+            return matrixMulBlas(other);
+        }
+        else
+        {
+            return matrixMulIt(other);
+        }
     }
 
     public DMatrix transpose()

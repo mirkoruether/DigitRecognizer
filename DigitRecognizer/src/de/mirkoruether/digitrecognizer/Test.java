@@ -34,7 +34,7 @@ public class Test
         NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5.0), 0.7);
 
-        trainAndTest(10, (e) -> 0.1, 10, trainer);
+        trainAndTest(1, (e) -> 0.1, 10, trainer);
 
         TestResult r = trainer.test(test);
         File f = new File(String.format("net_%.2f_percent_accuracy.zip", r.getAccuracy() * 100.0).replace('.', '-'));
