@@ -1,5 +1,8 @@
 package de.mirkoruether.digitrecognizer.gui;
 
+import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.digitrecognizer.DigitManipulator;
+import de.mirkoruether.linalg.DVector;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -15,6 +18,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.util.function.Consumer;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class PredictPanel extends JPanel
@@ -23,11 +27,14 @@ public class PredictPanel extends JPanel
 
     private final DrawPanel drawPanel;
     private final JLabel[] labels;
+    private final Window window;
 
     private final static String LABEL_FORMAT = "%d: %.2f%%";
 
-    public PredictPanel()
+    public PredictPanel(Window window)
     {
+        this.window = window;
+
         setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
 
@@ -104,13 +111,58 @@ public class PredictPanel extends JPanel
 
     private void setPercentage(int index, double percentage, boolean isMax)
     {
-        labels[index].setForeground(isMax ? Color.GREEN : Color.BLACK);
+        labels[index].setForeground(isMax ? Color.RED : Color.BLACK);
         labels[index].setText(String.format(LABEL_FORMAT, index, percentage));
     }
 
     private void startPrediction(BufferedImage im)
     {
+        Thread t = new Thread(() ->
+        {
+            DVector in = DigitManipulator.getAnnInput(im, (x) -> execOnEvtQueue(() -> drawPanel.setImage(x)), 1000);
+            execOnEvtQueue(() -> drawPanel.setImage(DigitManipulator.vectorToImage(in)));
 
+            NeuralNetwork net = window.getNet();
+            if(net.getInputSize() != 784)
+            {
+                JOptionPane.showMessageDialog(window, "Current Neural Network has wrong input size. Expected:784, Actual:"
+                                                      + net.getInputSize(), "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if(net.getOutputSize() != 10)
+            {
+                JOptionPane.showMessageDialog(window, "Current Neural Network has wrong output size. Expected:10, Actual:"
+                                                      + net.getOutputSize(), "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            DVector result = net.feedForward(in);
+            execOnEvtQueue(() -> setValues(result.toArray()));
+        });
+        t.start();
+    }
+
+    private void execOnEvtQueue(Runnable r)
+    {
+        try
+        {
+            EventQueue.invokeAndWait(r);
+        }
+        catch(Exception ex)
+        {
+
+        }
+    }
+
+    private void sleep(int ms)
+    {
+        try
+        {
+            Thread.sleep(ms);
+        }
+        catch(InterruptedException ex)
+        {
+        }
     }
 
     public static class DrawPanel extends JPanel
@@ -185,8 +237,26 @@ public class PredictPanel extends JPanel
 
         public void setImage(BufferedImage image)
         {
-            this.image = image;
+            if(image.getWidth() != 500 || image.getHeight() != 500)
+            {
+                this.image = scaleUp(image, 500, 500);
+            }
+            else
+            {
+                this.image = image;
+            }
             repaint();
+        }
+
+        private BufferedImage scaleUp(BufferedImage im, int newWidth, int newHeigth)
+        {
+            BufferedImage result = new BufferedImage(newWidth, newHeigth, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics2D = result.createGraphics();
+
+            graphics2D.drawImage(im, 0, 0, newWidth, newHeigth, null);
+            graphics2D.dispose();
+
+            return result;
         }
 
         public void resetImage()

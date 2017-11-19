@@ -29,31 +29,19 @@ public class Test
             784, 30, 10
         };
 
-        Supplier<StochasticGradientDescentTrainer> conf1 = () ->
-        {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.75);
-        };
-
-        Supplier<StochasticGradientDescentTrainer> conf2 = () ->
-        {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.8);
-        };
-
-        Supplier<StochasticGradientDescentTrainer> conf3 = () ->
-        {
-            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.85);
-        };
-
         Supplier<StochasticGradientDescentTrainer> conf0 = () ->
         {
             NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
             return new StochasticGradientDescentTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5));
         };
 
-        compareConfigs(1, (e) -> 0.1, 10, 4, conf0, conf1, conf2, conf3);
+        Supplier<StochasticGradientDescentTrainer> conf1 = () ->
+        {
+            NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+            return new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5), 0.75);
+        };
+
+        compareConfigs(5, (e) -> 0.1, 10, 1, conf0, conf1);
     }
 
     @SafeVarargs
