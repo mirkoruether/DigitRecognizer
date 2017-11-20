@@ -38,6 +38,26 @@ public class NeuralNetwork
         return result;
     }
 
+    public DetailedResult feedForwardDetailed(DVector in)
+    {
+        if(in.getLength() != getInputSize())
+        {
+            throw new SizeException("Wrong input size!");
+        }
+
+        DVector[] act = new DVector[layers.length + 1];
+        DVector[] wIs = new DVector[layers.length];
+
+        act[0] = in;
+        for(int i = 0; i < layers.length; i++)
+        {
+            wIs[i] = layers[i].calculateWeightedInput(act[i]);
+            act[i + 1] = wIs[i].applyFunctionElementWise(layers[i].getActivationFunction().f);
+        }
+
+        return new DetailedResult(wIs, act);
+    }
+
     public int getInputSize()
     {
         return layers[0].getInputSize();
@@ -66,14 +86,6 @@ public class NeuralNetwork
     public NetworkLayer getOutputLayer()
     {
         return layers[layers.length - 1];
-    }
-
-    public void setLearningMode(boolean b)
-    {
-        for(NetworkLayer l : layers)
-        {
-            l.setLearningMode(b);
-        }
     }
 
     public DVector[] getBiases()

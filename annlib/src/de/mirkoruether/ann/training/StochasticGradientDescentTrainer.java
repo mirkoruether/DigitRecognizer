@@ -1,6 +1,6 @@
 package de.mirkoruether.ann.training;
 
-import de.mirkoruether.ann.NetworkLayer;
+import de.mirkoruether.ann.DetailedResult;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
@@ -88,68 +88,44 @@ public class StochasticGradientDescentTrainer
 
     protected void trainBatch(TrainingData[] trainingDataBatch, double learningRate, int trainingDataSize, ExecutorService executer)
     {
-        try
-        {
-            net.setLearningMode(true);
+        Function<TrainingData, LayerInfos> func = (x)
+                ->
+                {
+                    DetailedResult netOutput = net.feedForwardDetailed(x.getInput());
+                    return new LayerInfos(netOutput.getActivationsInclInput(),
+                                          calculateErrorVectors(netOutput, x.getSolution())
+                    );
+        };
 
-            Function<TrainingData, LayerInfos> func = (x) ->
-            {
-                DVector netOutput = net.feedForward(x.getInput());
-                return new LayerInfos(getActivationsInclInput(x.getInput()),
-                                      calculateErrorVectors(netOutput, x.getSolution()));
-            };
+        ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, LayerInfos.class, executer);
+        LayerInfos[] layerInfos = exec.get(trainingDataBatch);
 
-            ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, LayerInfos.class, executer);
-            LayerInfos[] layerInfos = exec.get(trainingDataBatch);
-
-            updateWeights(layerInfos, learningRate, trainingDataSize);
-            updateBiases(layerInfos, learningRate);
-        }
-        catch(Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-        finally
-        {
-            net.setLearningMode(false);
-        }
+        updateWeights(layerInfos, learningRate, trainingDataSize);
+        updateBiases(layerInfos, learningRate);
     }
 
-    protected DVector[] getActivationsInclInput(DVector input)
-    {
-        DVector[] result = new DVector[net.getLayerCount() + 1];
-        result[0] = input;
-
-        for(int i = 0; i < net.getLayerCount(); i++)
-        {
-            result[i + 1] = net.getLayer(i).getLastActivation();
-        }
-        return result;
-    }
-
-    protected DVector[] calculateErrorVectors(DVector netOutput, DVector solution)
+    protected DVector[] calculateErrorVectors(DetailedResult netResult, DVector solution)
     {
         DVector[] error = new DVector[net.getLayerCount()];
 
         int L = net.getLayerCount() - 1;
 
-        error[L] = costs.calculateErrorOfLastLayer(netOutput, solution, calculateActivationDerivativeAtLastWeightedInput(L));
+        error[L] = costs.calculateErrorOfLastLayer(netResult.getNetOutput(), solution, calculateActivationDerivativeAtLayer(netResult, L));
 
         for(int la = L - 1; la >= 0; la--)
         {
             error[la] = error[la + 1].matrixMul(net.getLayer(la + 1).getWeights().transpose())
                     .toVectorDuplicate()
-                    .elementWiseMulInPlace(calculateActivationDerivativeAtLastWeightedInput(la));
+                    .elementWiseMulInPlace(calculateActivationDerivativeAtLayer(netResult, la));
         }
 
         return error;
     }
 
-    protected DVector calculateActivationDerivativeAtLastWeightedInput(int layer)
+    protected DVector calculateActivationDerivativeAtLayer(DetailedResult netOutput, int layer)
     {
-        NetworkLayer nl = net.getLayer(layer);
-        DFunction activationFuncDerivative = nl.getActivationFunction().f_derivative;
-        return nl.getLastWeigthedInput().applyFunctionElementWise(activationFuncDerivative);
+        DFunction activationFuncDerivative = getNet().getLayer(layer).getActivationFunction().f_derivative;
+        return netOutput.getWeightedInput(layer).applyFunctionElementWise(activationFuncDerivative);
     }
 
     protected void updateWeights(LayerInfos[] layerInfos, double learningRate, int trainingDataSize)
