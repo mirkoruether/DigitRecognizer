@@ -5,7 +5,10 @@ import org.jblas.exceptions.SizeException;
 
 public interface CostFunction
 {
-    public DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation);
+    public default DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
+    {
+        return calculateGradient(netOutput, solution).elementWiseMulInPlace(lastLayerDerivativeActivation);
+    }
 
     public DVector calculateGradient(DVector netOutput, DVector solution);
 
@@ -28,12 +31,6 @@ public interface CostFunction
             }
 
             return result * 0.5;
-        }
-
-        @Override
-        public DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
-        {
-            return calculateGradient(netOutput, solution).elementWiseMulInPlace(lastLayerDerivativeActivation);
         }
 
         @Override
@@ -79,6 +76,83 @@ public interface CostFunction
             // y/a - (1-y)/(1-a) element wise
             DVector grad = y.elementWiseDiv(a).subInPlace(DVector.ones(le).subInPlace(y).elementWiseDiv(DVector.ones(le).subInPlace(a)));
             return grad;
+        }
+    }
+
+    public static class TestingCostFunction implements CostFunction
+    {
+        private CostFunction baseFunc;
+        private TestDataSet.Test test;
+        private double factorIfRight;
+        private double factorIfWrong;
+
+        public TestingCostFunction(CostFunction baseFunc, TestDataSet.Test test, double factorIfRight, double factorIfWrong)
+        {
+            this.baseFunc = baseFunc;
+            this.test = test;
+            this.factorIfRight = factorIfRight;
+            this.factorIfWrong = factorIfWrong;
+        }
+
+        @Override
+        public double calculateCosts(DVector netOutput, DVector solution)
+        {
+            return baseFunc.calculateCosts(netOutput, solution)
+                   * (test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
+        }
+
+        @Override
+        public DVector calculateGradient(DVector netOutput, DVector solution)
+        {
+            return baseFunc.calculateGradient(netOutput, solution)
+                    .scalarMulInPlace(test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
+        }
+
+        @Override
+        public DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
+        {
+            return baseFunc.calculateErrorOfLastLayer(netOutput, solution, lastLayerDerivativeActivation)
+                    .scalarMulInPlace(test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
+        }
+
+        public CostFunction getBaseFunc()
+        {
+            return baseFunc;
+        }
+
+        public void setBaseFunc(CostFunction baseFunc)
+        {
+            this.baseFunc = baseFunc;
+        }
+
+        public TestDataSet.Test getTest()
+        {
+            return test;
+        }
+
+        public void setTest(TestDataSet.Test test)
+        {
+            this.test = test;
+        }
+
+        public double getFactorIfRight()
+        {
+            return factorIfRight;
+        }
+
+        public void setFactorIfRight(double factorIfRight)
+        {
+            this.factorIfRight = factorIfRight;
+        }
+
+        public double getFactorIfWrong()
+        {
+            return factorIfWrong;
+        }
+
+        public void setFactorIfWrong(double factorIfWrong)
+        {
+            this.factorIfWrong = factorIfWrong;
         }
     }
 }
