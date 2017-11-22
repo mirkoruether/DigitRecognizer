@@ -5,9 +5,9 @@ import de.mirkoruether.linalg.DVector;
 public class TestDataSet
 {
     private final TrainingData[] data;
-    private final Test test;
+    private final NetOutputTest test;
 
-    public TestDataSet(TrainingData[] data, Test test)
+    public TestDataSet(TrainingData[] data, NetOutputTest test)
     {
         this.data = data;
         this.test = test;
@@ -23,7 +23,7 @@ public class TestDataSet
         return data;
     }
 
-    public Test getTest()
+    public NetOutputTest getTest()
     {
         return test;
     }
@@ -31,10 +31,5 @@ public class TestDataSet
     public int getLength()
     {
         return data.length;
-    }
-
-    public static interface Test
-    {
-        public boolean test(DVector netOutput, DVector solution);
     }
 }

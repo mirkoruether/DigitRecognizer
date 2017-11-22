@@ -2,6 +2,8 @@ package de.mirkoruether.ann.training;
 
 import de.mirkoruether.ann.DetailedResult;
 import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.ann.training.costs.CostFunction;
+import de.mirkoruether.ann.training.regularization.CostFunctionRegularization;
 import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
@@ -90,11 +92,11 @@ public class StochasticGradientDescentTrainer
     {
         Function<TrainingData, LayerInfos> func = (x)
                 ->
-                {
-                    DetailedResult netOutput = net.feedForwardDetailed(x.getInput());
-                    return new LayerInfos(netOutput.getActivationsInclInput(),
-                                          calculateErrorVectors(netOutput, x.getSolution())
-                    );
+        {
+            DetailedResult netOutput = net.feedForwardDetailed(x.getInput());
+            return new LayerInfos(netOutput.getActivationsInclInput(),
+                                  calculateErrorVectors(netOutput, x.getSolution())
+            );
         };
 
         ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, LayerInfos.class, executer);

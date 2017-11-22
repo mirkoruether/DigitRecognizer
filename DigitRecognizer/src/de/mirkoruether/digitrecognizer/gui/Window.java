@@ -4,11 +4,11 @@ import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
-import de.mirkoruether.ann.training.CostFunction;
-import de.mirkoruether.ann.training.CostFunctionRegularization;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TrainingData;
+import de.mirkoruether.ann.training.costs.CrossEntropyCosts;
+import de.mirkoruether.ann.training.regularization.L2Regularization;
 import de.mirkoruether.digitrecognizer.MNISTLoader;
 import de.mirkoruether.util.Stopwatch;
 import java.awt.EventQueue;
@@ -72,8 +72,8 @@ public class Window extends JFrame
         };
 
         NeuralNetwork newNet = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-        MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, new CostFunction.CrossEntropy(),
-                                                            new CostFunctionRegularization.L2(5.0), 0.75);
+        MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, new CrossEntropyCosts(),
+                                                            new L2Regularization(5.0), 0.75);
 
         timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.3, 10, 1));
         System.out.println(timeFunc("Neuronales Netz wird getestet", () -> trainer.test(test)));

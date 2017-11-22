@@ -4,13 +4,13 @@ import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
-import de.mirkoruether.ann.training.CostFunction;
-import de.mirkoruether.ann.training.CostFunctionRegularization;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
+import de.mirkoruether.ann.training.costs.CrossEntropyCosts;
+import de.mirkoruether.ann.training.regularization.L2Regularization;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.util.ParallelExecution;
 import de.mirkoruether.util.Stopwatch;
@@ -33,7 +33,7 @@ public class Test
         };
 
         NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
-        MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, new CostFunction.CrossEntropy(), new CostFunctionRegularization.L2(5.0), 0.7);
+        MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, new CrossEntropyCosts(), new L2Regularization(5.0), 0.7);
 
         trainAndTest(1, (e) -> 0.1, 10, trainer);
 

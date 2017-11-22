@@ -1,6 +1,8 @@
 package de.mirkoruether.ann.training;
 
 import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.ann.training.costs.CostFunction;
+import de.mirkoruether.ann.training.regularization.CostFunctionRegularization;
 import de.mirkoruether.linalg.DMatrix;
 
 public class MomentumSGDTrainer extends StochasticGradientDescentTrainer
