@@ -1,9 +1,9 @@
 package de.mirkoruether.digitrecognizer;
 
 import de.mirkoruether.ann.ActivationFunction;
-import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.ann.initialization.NormalizedGaussianInitialization;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
@@ -32,7 +32,7 @@ public class Test
             784, 100, 10
         };
 
-        NeuralNetwork net = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+        NeuralNetwork net = new NeuralNetwork(sizes, new NormalizedGaussianInitialization(), ActivationFunction.logistic());
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, new CrossEntropyCosts(), new L2Regularization(5.0), 0.7);
 
         trainAndTest(1, (e) -> 0.1, 10, trainer);

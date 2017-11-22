@@ -1,9 +1,9 @@
 package de.mirkoruether.digitrecognizer.gui;
 
 import de.mirkoruether.ann.ActivationFunction;
-import de.mirkoruether.ann.NetLayerInitialization;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
+import de.mirkoruether.ann.initialization.NormalizedGaussianInitialization;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TrainingData;
@@ -71,7 +71,7 @@ public class Window extends JFrame
             784, 30, 10
         };
 
-        NeuralNetwork newNet = new NeuralNetwork(sizes, new NetLayerInitialization.NormalizedGaussian(), ActivationFunction.logistic());
+        NeuralNetwork newNet = new NeuralNetwork(sizes, new NormalizedGaussianInitialization(), ActivationFunction.logistic());
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, new CrossEntropyCosts(),
                                                             new L2Regularization(5.0), 0.75);
 
