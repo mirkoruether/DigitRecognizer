@@ -16,34 +16,36 @@ import java.util.function.Function;
 public class StochasticGradientDescentTrainer
 {
     private final NeuralNetwork net;
+    private int batchSize;
     private CostFunction costs;
     private CostFunctionRegularization reg;
 
-    public StochasticGradientDescentTrainer(NeuralNetwork net, CostFunction costs, CostFunctionRegularization reg)
+    public StochasticGradientDescentTrainer(NeuralNetwork net, int batchSize, CostFunction costs, CostFunctionRegularization reg)
     {
-        this.costs = Objects.requireNonNull(costs);
         this.net = Objects.requireNonNull(net);
+        this.batchSize = batchSize;
+        this.costs = Objects.requireNonNull(costs);
         this.reg = reg;
     }
 
-    public StochasticGradientDescentTrainer(NeuralNetwork net, CostFunction costs)
+    public StochasticGradientDescentTrainer(NeuralNetwork net, int batchSize, CostFunction costs)
     {
-        this(net, costs, null);
+        this(net, batchSize, costs, null);
     }
 
-    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs)
+    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int epochs)
     {
-        return ParallelExecution.inExecutorF((ex) -> trainAndTest(trainingData, testData, learningRate, batchSize, epochs, ex), -1);
+        return ParallelExecution.inExecutorF((ex) -> trainAndTest(trainingData, testData, learningRate, epochs, ex), -1);
     }
 
-    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int batchSize, int epochs, ExecutorService executer)
+    public TestResult[] trainAndTest(TrainingData[] trainingData, TestDataSet testData, double learningRate, int epochs, ExecutorService executer)
     {
         TestResult[] results = new TestResult[epochs + 1];
         results[0] = test(testData);
 
         for(int i = 0; i < epochs; i++)
         {
-            trainEpoch(trainingData, learningRate, batchSize, executer);
+            trainEpoch(trainingData, learningRate, executer);
             results[i + 1] = test(testData);
         }
 
@@ -64,22 +66,23 @@ public class StochasticGradientDescentTrainer
         return new TestResult(testData.getLength(), correct, costSum / testData.getLength());
     }
 
-    public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs)
+    public void train(TrainingData[] trainingData, double learningRate, int epochs)
     {
-        ParallelExecution.inExecutor((ex) -> train(trainingData, learningRate, batchSize, epochs, ex), -1);
+        ParallelExecution.inExecutor((ex) -> train(trainingData, learningRate, epochs, ex), -1);
     }
 
-    public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs, ExecutorService executer)
+    public void train(TrainingData[] trainingData, double learningRate, int epochs, ExecutorService executer)
     {
         for(int i = 0; i < epochs; i++)
         {
-            trainEpoch(trainingData, learningRate, batchSize, executer);
+            trainEpoch(trainingData, learningRate, executer);
         }
     }
 
-    protected void trainEpoch(TrainingData[] trainingData, double learningRate, int batchSize, ExecutorService executer)
+    protected void trainEpoch(TrainingData[] trainingData, double learningRate, ExecutorService executer)
     {
         TrainingData[] shuffled = Randomizer.shuffle(trainingData, TrainingData.class);
+
         for(int i = 0; i < trainingData.length; i += batchSize)
         {
             TrainingData[] batch = new TrainingData[batchSize];
@@ -188,6 +191,16 @@ public class StochasticGradientDescentTrainer
     public NeuralNetwork getNet()
     {
         return net;
+    }
+
+    public int getBatchSize()
+    {
+        return batchSize;
+    }
+
+    public void setBatchSize(int batchSize)
+    {
+        this.batchSize = batchSize;
     }
 
     public CostFunction getCosts()

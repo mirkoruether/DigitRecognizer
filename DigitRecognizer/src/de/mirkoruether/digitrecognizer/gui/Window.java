@@ -72,10 +72,10 @@ public class Window extends JFrame
         };
 
         NeuralNetwork newNet = new NeuralNetwork(sizes, new NormalizedGaussianInitialization(), ActivationFunction.logistic());
-        MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, new CrossEntropyCosts(),
+        MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, 10, new CrossEntropyCosts(),
                                                             new L2Regularization(5.0), 0.75);
 
-        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.3, 10, 1));
+        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.3, 1));
         System.out.println(timeFunc("Neuronales Netz wird getestet", () -> trainer.test(test)));
 
         return newNet;

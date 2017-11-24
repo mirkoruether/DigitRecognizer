@@ -10,26 +10,24 @@ public class MomentumSGDTrainer extends StochasticGradientDescentTrainer
     private double momentumCoEffizient;
     private final DMatrix[] velocities;
 
-    public MomentumSGDTrainer(NeuralNetwork net, CostFunction costs, CostFunctionRegularization reg, double momentumCoEffizient)
+    public MomentumSGDTrainer(NeuralNetwork net, int batchSize, CostFunction costs, CostFunctionRegularization reg, double momentumCoEffizient)
     {
-        super(net, costs, reg);
+        super(net, batchSize, costs, reg);
         this.momentumCoEffizient = momentumCoEffizient;
 
         velocities = new DMatrix[net.getLayerCount()];
         clearVelocities();
     }
 
-    public MomentumSGDTrainer(NeuralNetwork net, CostFunction costs, double momentumCoEffizient)
+    public MomentumSGDTrainer(NeuralNetwork net, int batchSize, CostFunction costs, double momentumCoEffizient)
     {
-        this(net, costs, null, momentumCoEffizient);
+        this(net, batchSize, costs, null, momentumCoEffizient);
     }
 
     @Override
-    public void train(TrainingData[] trainingData, double learningRate, int batchSize, int epochs)
+    public void train(TrainingData[] trainingData, double learningRate, int epochs)
     {
-        clearVelocities();
-        super.train(trainingData, learningRate, batchSize, epochs);
-        clearVelocities();
+        super.train(trainingData, learningRate, epochs);
     }
 
     @Override
