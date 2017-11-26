@@ -9,7 +9,6 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
 {
     private final LinqList<IntelligentAbortCondition> conditions;
     private final LinqList<IntelligentEpochResult> results = new LinqList<>();
-    private long startTime = -1;
 
     public IntelligentAbortConditionSet()
     {
@@ -25,11 +24,6 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
     public boolean abort(IntelligentEpochResult result)
     {
         results.add(result);
-
-        if(result.getEpochNumber() == 0)
-        {
-            startTime = System.currentTimeMillis();
-        }
 
         return conditions.one(x -> x.abort(result));
     }
@@ -47,7 +41,7 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
 
     public IntelligentAbortConditionSet addTimeLimit(long timeLimit)
     {
-        return add(x -> (System.currentTimeMillis() - startTime) > (timeLimit * 1000));
+        return add(x -> x.getTotalTime() > (timeLimit * 1000));
     }
 
     public IntelligentAbortConditionSet addEpochLimit(int epochs)

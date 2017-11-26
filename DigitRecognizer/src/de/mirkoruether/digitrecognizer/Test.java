@@ -4,6 +4,8 @@ import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.ann.initialization.NormalizedGaussianInitialization;
+import de.mirkoruether.ann.intelligenttraining.IntelligentEpochResult;
+import de.mirkoruether.ann.intelligenttraining.IntelligentTrainer;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
 import de.mirkoruether.ann.training.NetOutputTest;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
@@ -33,6 +35,7 @@ public class Test
     public static void main(String[] args)
     {
         loadMNIST();
+        System.out.println();
 
         int[] sizes = new int[]
         {
@@ -41,9 +44,10 @@ public class Test
 
         NeuralNetwork net = new NeuralNetwork(sizes, new NormalizedGaussianInitialization(), ActivationFunction.logistic());
         CostFunction costs = new TestingCostFunction(new CrossEntropyCosts(), test.getTest(), 1.5);
-        MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, 10, costs, new L2Regularization(5.0), 0.7);
+        MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, 10, costs, new L2Regularization(3.0), 0.6);
 
-        trainAndTest(1, (e) -> 0.1, trainer);
+        IntelligentTrainer it = new IntelligentTrainer(trainer, training, validation, test);
+        it.train(x -> logEpochResult(x), 0.1);
 
         TestResult r = trainer.test(test);
         if(r.getAccuracy() > 0.98)
@@ -51,6 +55,42 @@ public class Test
             File f = new File(String.format("net_%.2f_percent_accuracy", r.getAccuracy() * 100.0).replace('.', '-') + ".zip");
             NetworkIO.saveNetworkData(net, f);
         }
+    }
+
+    private static void logEpochResult(IntelligentEpochResult r)
+    {
+        System.out.printf("---------- Epoch " + intToString(r.getEpochNumber(), 3) + " ----------%n");
+        logData(31, "Epoch duration", "%.2fs", r.getEpochTime() / 1000.0);
+        logData(31, "Total time elapsed", "%.2fs", r.getTotalTime() / 1000.0);
+        logData(31, "Learning rate", "%.4f", r.getLearningRate());
+        logData(31, "Validation costs", "%.4f", r.getValidationDataTestResult().getAverageCosts());
+        logData(31, "Test costs", "%.4f", r.getTestDataTestResult().getAverageCosts());
+        logData(31, "Validation accuracy", "%.2f%%", r.getValidationDataTestResult().getAccuracy() * 100);
+        logData(31, "Test accuracy", "%.2f%%", r.getTestDataTestResult().getAccuracy() * 100);
+        System.out.printf("-------------------------------%n%n");
+    }
+
+    private static void logData(int totalMinLength, String name, String valuePattern, Object... objs)
+    {
+        String n = name + ": ";
+        String v = String.format(valuePattern, objs);
+        String r = n + v;
+        while(r.length() < totalMinLength)
+        {
+            n += " ";
+            r = n + v;
+        }
+        System.out.println(r);
+    }
+
+    private static String intToString(int n, int minLength)
+    {
+        String r = String.valueOf(n);
+        while(r.length() < minLength)
+        {
+            r = "0" + r;
+        }
+        return r;
     }
 
     @SafeVarargs

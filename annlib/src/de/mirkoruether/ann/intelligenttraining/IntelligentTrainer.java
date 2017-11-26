@@ -22,18 +22,38 @@ public class IntelligentTrainer
         this.testData = testData;
     }
 
+    public void train(Consumer<IntelligentEpochResult> log, double startLearningRate)
+    {
+        final IntelligentAbortCondition abortCondition = new IntelligentAbortConditionSet()
+                .addNoImprovementTestAccuracy(6);
+
+        train(abortCondition, log, startLearningRate);
+    }
+
+    public void train(IntelligentAbortCondition abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate)
+    {
+        final double learningRateDivisor = 2.0;
+        final Supplier<IntelligentAbortCondition> learningRateLowering = ()
+                -> new IntelligentAbortConditionSet()
+                        .addNoImprovementTestAccuracy(2);
+
+        train(abortCondition, log, startLearningRate, learningRateLowering, learningRateDivisor);
+    }
+
     public void train(IntelligentAbortCondition abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate, Supplier<IntelligentAbortCondition> learningRateLowering, double learningRateDivisor)
     {
-        IntelligentEpochResult result = generateAndLogResult(0, Double.POSITIVE_INFINITY, log);
-
         int epoch = 0;
+        long startTime = System.currentTimeMillis();
+
         int epochWithLearningRate = 0;
+        long lrStartTime = System.currentTimeMillis();
+
         double currLearningRate = startLearningRate;
         IntelligentAbortCondition lrLowering = learningRateLowering.get();
+        IntelligentEpochResult result = generateAndLogResult(0, Double.POSITIVE_INFINITY, startTime, 0, log);
         while(!abortCondition.abort(result))
         {
-            IntelligentEpochResult lrResult = new IntelligentEpochResult(result);
-            lrResult.setEpochNumber(epochWithLearningRate);
+            IntelligentEpochResult lrResult = generateLrResult(result, epochWithLearningRate, lrStartTime);
 
             if(lrLowering.abort(lrResult))
             {
@@ -41,6 +61,7 @@ public class IntelligentTrainer
                 lrLowering = learningRateLowering.get();
 
                 epochWithLearningRate = 0;
+                lrStartTime = System.currentTimeMillis();
                 continue;
             }
 
@@ -48,20 +69,37 @@ public class IntelligentTrainer
 
             epoch++;
             epochWithLearningRate++;
-            result = generateAndLogResult(epoch, currLearningRate, log);
+            result = generateAndLogResult(epoch, currLearningRate, startTime, result.getTotalTime(), log);
         }
     }
 
-    protected IntelligentEpochResult generateAndLogResult(int epoch, double learningRate, Consumer<IntelligentEpochResult> log)
+    private IntelligentEpochResult generateAndLogResult(int epoch, double learningRate, long startTime, long lastTotalDuration, Consumer<IntelligentEpochResult> log)
     {
         TestResult vali = trainer.test(validationData);
         TestResult test = trainer.test(testData);
-        IntelligentEpochResult r = new IntelligentEpochResult(epoch, learningRate, vali, test);
+        long currTime = System.currentTimeMillis();
+        long totalTime = currTime - startTime;
+        long epochTime = totalTime - lastTotalDuration;
+        IntelligentEpochResult r = new IntelligentEpochResult(epoch, learningRate, totalTime, epochTime, vali, test);
         if(log != null)
         {
             log.accept(r);
         }
         return r;
+    }
+
+    private IntelligentEpochResult generateLrResult(IntelligentEpochResult r, int lrEpoch, long lrStartTime)
+    {
+        IntelligentEpochResult lrResult = new IntelligentEpochResult(r);
+        lrResult.setEpochNumber(lrEpoch);
+
+        long currTime = System.currentTimeMillis();
+        long totalTime = currTime - lrStartTime;
+        long epochTime = lrEpoch == 0 ? totalTime : r.getEpochTime();
+        lrResult.setTotalTime(totalTime);
+        lrResult.setEpochTime(epochTime);
+
+        return lrResult;
     }
 
     public StochasticGradientDescentTrainer getTrainer()
