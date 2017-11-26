@@ -9,6 +9,12 @@ public class IntelligentEpochResult
     private TestResult validationDataTestResult;
     private TestResult testDataTestResult;
 
+    public IntelligentEpochResult(IntelligentEpochResult r)
+    {
+        this(r.epochNumber, r.learningRate,
+             new TestResult(r.validationDataTestResult), new TestResult(r.testDataTestResult));
+    }
+
     public IntelligentEpochResult(int epochNumber, double learningRate,
                                   TestResult validationDataTestResult, TestResult testDataTestResult)
     {

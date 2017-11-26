@@ -27,19 +27,28 @@ public class IntelligentTrainer
         IntelligentEpochResult result = generateAndLogResult(0, Double.POSITIVE_INFINITY, log);
 
         int epoch = 0;
+        int epochWithLearningRate = 0;
         double currLearningRate = startLearningRate;
         IntelligentAbortCondition lrLowering = learningRateLowering.get();
         while(!abortCondition.abort(result))
         {
-            epoch++;
-            trainer.train(trainingData, currLearningRate, 1);
-            result = generateAndLogResult(epoch, currLearningRate, log);
+            IntelligentEpochResult lrResult = new IntelligentEpochResult(result);
+            lrResult.setEpochNumber(epochWithLearningRate);
 
-            if(lrLowering.abort(result))
+            if(lrLowering.abort(lrResult))
             {
                 currLearningRate /= learningRateDivisor;
                 lrLowering = learningRateLowering.get();
+
+                epochWithLearningRate = 0;
+                continue;
             }
+
+            trainer.train(trainingData, currLearningRate, 1);
+
+            epoch++;
+            epochWithLearningRate++;
+            result = generateAndLogResult(epoch, currLearningRate, log);
         }
     }
 

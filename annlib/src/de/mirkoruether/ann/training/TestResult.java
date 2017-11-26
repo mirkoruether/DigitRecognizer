@@ -6,6 +6,11 @@ public class TestResult
     private final int correct;
     private final double averageCosts;
 
+    public TestResult(TestResult r)
+    {
+        this(r.total, r.correct, r.averageCosts);
+    }
+
     public TestResult(int testLength, int correct, double averageCosts)
     {
         this.total = testLength;
