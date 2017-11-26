@@ -5,6 +5,7 @@ import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class IntelligentTrainer
 {
@@ -21,22 +22,32 @@ public class IntelligentTrainer
         this.testData = testData;
     }
 
-    public void train(double startLearningRate, IntelligentAbortCondition con, Consumer<IntelligentEpochResult> log)
+    public void train(IntelligentAbortCondition abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate, Supplier<IntelligentAbortCondition> learningRateLowering, double learningRateDivisor)
     {
-        IntelligentEpochResult result = generateAndLogResult(0, log);
+        IntelligentEpochResult result = generateAndLogResult(0, Double.POSITIVE_INFINITY, log);
 
+        int epoch = 0;
         double currLearningRate = startLearningRate;
-        while(!con.abort(result))
+        IntelligentAbortCondition lrLowering = learningRateLowering.get();
+        while(!abortCondition.abort(result))
         {
-            throw new UnsupportedOperationException("Not implemented yet");
+            epoch++;
+            trainer.train(trainingData, currLearningRate, 1);
+            result = generateAndLogResult(epoch, currLearningRate, log);
+
+            if(lrLowering.abort(result))
+            {
+                currLearningRate /= learningRateDivisor;
+                lrLowering = learningRateLowering.get();
+            }
         }
     }
 
-    protected IntelligentEpochResult generateAndLogResult(int epoch, Consumer<IntelligentEpochResult> log)
+    protected IntelligentEpochResult generateAndLogResult(int epoch, double learningRate, Consumer<IntelligentEpochResult> log)
     {
         TestResult vali = trainer.test(validationData);
         TestResult test = trainer.test(testData);
-        IntelligentEpochResult r = new IntelligentEpochResult(epoch, vali, test);
+        IntelligentEpochResult r = new IntelligentEpochResult(epoch, learningRate, vali, test);
         if(log != null)
         {
             log.accept(r);

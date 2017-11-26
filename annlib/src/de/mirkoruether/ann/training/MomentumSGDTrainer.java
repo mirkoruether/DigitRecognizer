@@ -25,12 +25,6 @@ public class MomentumSGDTrainer extends StochasticGradientDescentTrainer
     }
 
     @Override
-    public void train(TrainingData[] trainingData, double learningRate, int epochs)
-    {
-        super.train(trainingData, learningRate, epochs);
-    }
-
-    @Override
     protected void reduceWeigths(int layer, DMatrix decayInclRegularization)
     {
         velocities[layer].scalarMulInPlace(momentumCoEffizient).subInPlace(decayInclRegularization);

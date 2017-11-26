@@ -5,10 +5,12 @@ import de.mirkoruether.ann.training.TestResult;
 public class IntelligentEpochResult
 {
     private int epochNumber;
+    private double learningRate;
     private TestResult validationDataTestResult;
     private TestResult testDataTestResult;
 
-    public IntelligentEpochResult(int epochNumber, TestResult validationDataTestResult, TestResult testDataTestResult)
+    public IntelligentEpochResult(int epochNumber, double learningRate,
+                                  TestResult validationDataTestResult, TestResult testDataTestResult)
     {
         this.epochNumber = epochNumber;
         this.validationDataTestResult = validationDataTestResult;
@@ -23,6 +25,16 @@ public class IntelligentEpochResult
     public void setEpochNumber(int epochNumber)
     {
         this.epochNumber = epochNumber;
+    }
+
+    public double getLearningRate()
+    {
+        return learningRate;
+    }
+
+    public void setLearningRate(double learningRate)
+    {
+        this.learningRate = learningRate;
     }
 
     public TestResult getValidationDataTestResult()
