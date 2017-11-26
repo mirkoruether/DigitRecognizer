@@ -102,6 +102,48 @@ public class LinqList<T> extends ArrayList<T>
         return true;
     }
 
+    public int maxIndex(Function<T, Double> func)
+    {
+        double max = Double.NEGATIVE_INFINITY;
+        int maxIndex = -1;
+        for(int i = 0; i < size(); i++)
+        {
+            double val = func.apply(get(i));
+            if(val > max)
+            {
+                maxIndex = i;
+                max = val;
+            }
+        }
+
+        return maxIndex;
+    }
+
+    public int minIndex(Function<T, Double> func)
+    {
+        return maxIndex(x -> -1.0 * func.apply(x));
+    }
+
+    public T maxObject(Function<T, Double> func)
+    {
+        return get(maxIndex(func));
+    }
+
+    public T minObject(Function<T, Double> func)
+    {
+        return get(minIndex(func));
+    }
+
+    public double maxValue(Function<T, Double> func)
+    {
+        return func.apply(maxObject(func));
+    }
+
+    public double minValue(Function<T, Double> func)
+    {
+        return func.apply(minObject(func));
+    }
+
     @SuppressWarnings("unchecked")
     public T[] toArray(Class<T> clazz)
     {
