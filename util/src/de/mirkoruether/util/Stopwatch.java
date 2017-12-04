@@ -34,4 +34,8 @@ public class Stopwatch
         stream.println(name + " started.");
         return timeExecution(task, (dur) -> stream.println(name + " finished. " + ((double)dur / 1000) + "s elapsed"));
     }
+
+    private Stopwatch()
+    {
+    }
 }

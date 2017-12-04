@@ -9,19 +9,27 @@ import java.util.function.Function;
 public class ParallelExecution<T, R>
 {
     private final Function<T, R> func;
-    private final Class<R> clazz;
+    private final Function<Integer, R[]> arraySupplier;
     private final ExecutorService executor;
 
-    private int finished = 0;
-    private R[] results;
-
-    private final Object notifier = new Object();
+    public ParallelExecution(Function<T, R> func, Function<Integer, R[]> arraySupplier, ExecutorService executor)
+    {
+        this.func = func;
+        this.arraySupplier = arraySupplier;
+        this.executor = executor;
+    }
 
     public ParallelExecution(Function<T, R> func, Class<R> clazz, ExecutorService executor)
     {
-        this.func = func;
-        this.clazz = clazz;
-        this.executor = executor;
+        this(func, (i) -> newArray(clazz, i), executor);
+    }
+
+    public ParallelExecution(Function<T, R> func, ExecutorService executor)
+    {
+        this(func, (i) ->
+     {
+         throw new UnsupportedOperationException("No array supplier given!");
+     }, executor);
     }
 
     public R[] get(T[] in)
@@ -31,50 +39,23 @@ public class ParallelExecution<T, R>
 
     public R[] get(T[] in, long timeout)
     {
-        try
-        {
-            newResults(in.length);
-            finished = 0;
-            for(int i = 0; i < in.length; i++)
-            {
-                final int index = i;
-                executor.execute(() ->
-                {
-                    results[index] = func.apply(in[index]);
-                    synchronized(notifier)
-                    {
-                        if(++finished == in.length)
-                        {
-                            notifier.notifyAll();
-                        }
-                    }
-                });
-            }
+        return get(in, arraySupplier.apply(in.length), timeout);
+    }
 
-            synchronized(notifier)
-            {
-                if(finished == in.length)
-                {
-                    return results;
-                }
-                notifier.wait(timeout);
-            }
+    public R[] get(T[] in, R[] dest)
+    {
+        return get(in, dest, 0);
+    }
 
-            R[] rs = results;
-            results = null;
-            finished = 0;
-            return rs;
-        }
-        catch(InterruptedException ex)
-        {
-            throw new RuntimeException("Interrupted!", ex);
-        }
+    public R[] get(T[] in, R[] dest, long timeout)
+    {
+        return new Exec<T, R>().get(in, dest, timeout, executor, func);
     }
 
     @SuppressWarnings("unchecked")
-    private void newResults(int length)
+    private static <T> T[] newArray(Class<T> clazz, int length)
     {
-        results = (R[])Array.newInstance(clazz, length);
+        return (T[])Array.newInstance(clazz, length);
     }
 
     public static <T> T inExecutorF(Function<ExecutorService, T> func, int n)
@@ -92,5 +73,54 @@ public class ParallelExecution<T, R>
             func.accept(ex);
             return 0;
         }, n);
+    }
+
+    protected static class Exec<T, R>
+    {
+        private final Object notifier = new Object();
+
+        private int finished = 0;
+
+        protected R[] get(T[] in, R[] dest, long timeout, ExecutorService executor, Function<T, R> func)
+        {
+            if(dest.length < in.length)
+            {
+                throw new ArrayIndexOutOfBoundsException("Destination array is to small");
+            }
+
+            try
+            {
+                for(int i = 0; i < in.length; i++)
+                {
+                    final int index = i;
+                    executor.execute(() ->
+                    {
+                        dest[index] = func.apply(in[index]);
+                        synchronized(notifier)
+                        {
+                            if(++finished == in.length)
+                            {
+                                notifier.notifyAll();
+                            }
+                        }
+                    });
+                }
+
+                synchronized(notifier)
+                {
+                    if(finished == in.length)
+                    {
+                        return dest;
+                    }
+                    notifier.wait(timeout);
+                }
+
+                return dest;
+            }
+            catch(InterruptedException ex)
+            {
+                throw new RuntimeException("Interrupted!", ex);
+            }
+        }
     }
 }

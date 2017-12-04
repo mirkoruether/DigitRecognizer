@@ -1,7 +1,6 @@
 package de.mirkoruether.digitrecognizer.gui;
 
 import de.mirkoruether.ann.NeuralNetwork;
-import de.mirkoruether.digitrecognizer.DigitManipulator;
 import de.mirkoruether.linalg.DVector;
 import java.awt.Color;
 import java.awt.Dimension;

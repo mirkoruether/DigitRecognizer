@@ -9,6 +9,7 @@ import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.ann.training.costs.CrossEntropyCosts;
 import de.mirkoruether.ann.training.regularization.L2Regularization;
+import de.mirkoruether.digitrecognizer.MNISTDataSet;
 import de.mirkoruether.digitrecognizer.MNISTLoader;
 import de.mirkoruether.util.Stopwatch;
 import java.awt.EventQueue;
@@ -24,8 +25,10 @@ public class Window extends JFrame
     private static final File NET_FILE = new File("net.zip");
     private static final String TITLEPATTEN = "Ziffernerkenner - %s";
 
-    private TrainingData[] training;
-    private TestDataSet test;
+    private final static int VALIDATION_LENGTH = 0;
+    private final static String MNIST_DATA_PATH = "./data";
+
+    private MNISTDataSet MNIST;
 
     private final JTabbedPane tabs;
     private final PredictPanel predictPanel;
@@ -61,9 +64,9 @@ public class Window extends JFrame
 
     private NeuralNetwork trainNet()
     {
-        if(training == null)
+        if(MNIST == null)
         {
-            loadMNIST();
+            MNIST = timeFunc("Trainingsdaten werden geladen", () -> MNISTLoader.loadMNIST(MNIST_DATA_PATH, VALIDATION_LENGTH));
         }
 
         int[] sizes =
@@ -75,8 +78,8 @@ public class Window extends JFrame
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(newNet, 10, new CrossEntropyCosts(),
                                                             new L2Regularization(5.0), 0.75);
 
-        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(training, 0.3, 1));
-        System.out.println(timeFunc("Neuronales Netz wird getestet", () -> trainer.test(test)));
+        timeFunc("Neuronales Netz wird trainiert", () -> trainer.train(getTraining(), 0.3, 1));
+        System.out.println(timeFunc("Neuronales Netz wird getestet", () -> trainer.test(getTest())));
 
         return newNet;
     }
@@ -89,13 +92,6 @@ public class Window extends JFrame
     public void setNet(NeuralNetwork net)
     {
         this.net = net;
-    }
-
-    private void loadMNIST()
-    {
-        training = timeFunc("Trainingsdaten werden geladen", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
-        TrainingData[] testData = timeFunc("Testdaten werden geladen", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));
-        test = new TestDataSet(testData, (o, s) -> s.get(o.indexOfMaxium()) == 1.0);
     }
 
     private void timeFunc(String name, Runnable func)
@@ -117,17 +113,18 @@ public class Window extends JFrame
 
     public TrainingData[] getTraining()
     {
-        return training;
+        return MNIST.getTrainingData();
     }
 
     public TestDataSet getTest()
     {
-        return test;
+        return MNIST.getTestData();
     }
 
     public static void main(String[] args)
     {
-        //NET_FILE.delete();
+        NET_FILE.delete();
+
         EventQueue.invokeLater(() ->
         {
             Window w = new Window();

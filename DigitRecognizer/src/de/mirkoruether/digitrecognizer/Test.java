@@ -7,18 +7,14 @@ import de.mirkoruether.ann.initialization.NormalizedGaussianInitialization;
 import de.mirkoruether.ann.intelligenttraining.IntelligentEpochResult;
 import de.mirkoruether.ann.intelligenttraining.IntelligentTrainer;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
-import de.mirkoruether.ann.training.NetOutputTest;
 import de.mirkoruether.ann.training.StochasticGradientDescentTrainer;
-import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
-import de.mirkoruether.ann.training.TrainingData;
 import de.mirkoruether.ann.training.costs.CostFunction;
 import de.mirkoruether.ann.training.costs.CrossEntropyCosts;
 import de.mirkoruether.ann.training.costs.TestingCostFunction;
 import de.mirkoruether.ann.training.regularization.L2Regularization;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.util.ParallelExecution;
-import de.mirkoruether.util.Randomizer;
 import de.mirkoruether.util.Stopwatch;
 import java.io.File;
 import java.util.function.Function;
@@ -27,14 +23,13 @@ import java.util.function.Supplier;
 public class Test
 {
     private final static int VALIDATION_LENGTH = 10000;
+    private final static String MNIST_DATA_PATH = "./data";
 
-    private static TrainingData[] training;
-    private static TestDataSet validation;
-    private static TestDataSet test;
+    private static MNISTDataSet MNIST;
 
     public static void main(String[] args)
     {
-        loadMNIST();
+        MNIST = timeFunc("MNIST data loading", () -> MNISTLoader.loadMNIST(MNIST_DATA_PATH, VALIDATION_LENGTH));
         System.out.println();
 
         int[] sizes = new int[]
@@ -43,13 +38,13 @@ public class Test
         };
 
         NeuralNetwork net = new NeuralNetwork(sizes, new NormalizedGaussianInitialization(), ActivationFunction.logistic());
-        CostFunction costs = new TestingCostFunction(new CrossEntropyCosts(), test.getTest(), 1.5);
+        CostFunction costs = new TestingCostFunction(new CrossEntropyCosts(), MNIST.getTestData().getTest(), 1.5);
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, 10, costs, new L2Regularization(3.0), 0.6);
 
-        IntelligentTrainer it = new IntelligentTrainer(trainer, training, validation, test);
+        IntelligentTrainer it = new IntelligentTrainer(trainer, MNIST.getTrainingData(), MNIST.getValidationData(), MNIST.getTestData());
         it.train(x -> logEpochResult(x), 0.1);
 
-        TestResult r = trainer.test(test);
+        TestResult r = trainer.test(MNIST.getTestData());
         if(r.getAccuracy() > 0.98)
         {
             File f = new File(String.format("net_%.2f_percent_accuracy", r.getAccuracy() * 100.0).replace('.', '-') + ".zip");
@@ -156,31 +151,13 @@ public class Test
             for(int i = 0; i < epochs; i++)
             {
                 double learningRate = learningRateFunc.apply(i);
-                System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(test)).toString());
-                timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.train(training, learningRate, 1, ex));
+                System.out.println(timeFunc("Epoch " + i + ": Testing", () -> sgdt.test(MNIST.getTestData())).toString());
+                timeFunc("Epoch " + (i + 1) + ": Training with learning rate " + learningRate, () -> sgdt.train(MNIST.getTrainingData(), learningRate, 1, ex));
             }
-            TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(test));
+            TestResult r = timeFunc("Final Testing for this iteration", () -> sgdt.test(MNIST.getTestData()));
             System.out.println(r.toString());
             return r.getAccuracy();
         }, 20);
-    }
-
-    private static void loadMNIST()
-    {
-        final NetOutputTest testFunc = (o, s) -> s.get(o.indexOfMaxium()) == 1.0;
-
-        TrainingData[] trainData = timeFunc("Training data loading", () -> MNISTLoader.importTrainingData("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz"));
-        trainData = Randomizer.shuffle(trainData, TrainingData.class);
-
-        training = new TrainingData[trainData.length - VALIDATION_LENGTH];
-        TrainingData[] validationData = new TrainingData[VALIDATION_LENGTH];
-
-        System.arraycopy(trainData, 0, validationData, 0, validationData.length);
-        System.arraycopy(trainData, validationData.length, training, 0, training.length);
-        validation = new TestDataSet(validationData, testFunc);
-
-        TrainingData[] testData = timeFunc("Test data loading", () -> MNISTLoader.importTrainingData("data/t10k-labels-idx1-ubyte.gz", "data/t10k-images-idx3-ubyte.gz"));
-        test = new TestDataSet(testData, testFunc);
     }
 
     private static void timeFunc(String name, Runnable func)

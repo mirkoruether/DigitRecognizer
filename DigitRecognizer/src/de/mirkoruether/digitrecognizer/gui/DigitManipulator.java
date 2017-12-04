@@ -1,4 +1,4 @@
-package de.mirkoruether.digitrecognizer;
+package de.mirkoruether.digitrecognizer.gui;
 
 import de.mirkoruether.linalg.DVector;
 import java.awt.Color;
