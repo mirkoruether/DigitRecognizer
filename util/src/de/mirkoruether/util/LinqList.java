@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -44,6 +46,11 @@ public class LinqList<T> extends ArrayList<T>
         return super.clone();
     }
 
+    public LinqList<T> copy()
+    {
+        return new LinqList<>(this);
+    }
+
     public T first()
     {
         return get(0);
@@ -75,6 +82,38 @@ public class LinqList<T> extends ArrayList<T>
             result.add(func.apply(obj));
         }
         return result;
+    }
+
+    public <R> LinqList<R> selectParallel(Function<T, R> func)
+    {
+        return selectParallel(func, 0);
+    }
+
+    public <R> LinqList<R> selectParallel(Function<T, R> func, int maxThreads)
+    {
+        return ParallelExecution.inExecutorF((exec) -> selectParallel(func, exec), maxThreads);
+    }
+
+    public <R> LinqList<R> selectParallel(Function<T, R> func, ExecutorService exec)
+    {
+        return new ParallelExecution<>(func, exec).get(this);
+    }
+
+    public LinqList<T> sortCopy(Comparator<? super T> c)
+    {
+        LinqList<T> result = copy();
+        result.sort(c);
+        return result;
+    }
+
+    public void shuffle()
+    {
+        Randomizer.shuffleInPlace(this);
+    }
+
+    public LinqList<T> shuffleCopy()
+    {
+        return Randomizer.shuffle(this);
     }
 
     public boolean one(Predicate<T> func)

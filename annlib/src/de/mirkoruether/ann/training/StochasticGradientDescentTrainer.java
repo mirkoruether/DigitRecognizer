@@ -81,12 +81,12 @@ public class StochasticGradientDescentTrainer
 
     protected void trainEpoch(TrainingData[] trainingData, double learningRate, ExecutorService executer)
     {
-        TrainingData[] shuffled = Randomizer.shuffle(trainingData, TrainingData.class);
+        Randomizer.shuffleArrInPlace(trainingData);
 
         for(int i = 0; i < trainingData.length; i += batchSize)
         {
             TrainingData[] batch = new TrainingData[batchSize];
-            System.arraycopy(shuffled, i, batch, 0, batchSize);
+            System.arraycopy(trainingData, i, batch, 0, batchSize);
             trainBatch(batch, learningRate, trainingData.length, executer);
         }
     }
@@ -102,8 +102,8 @@ public class StochasticGradientDescentTrainer
             );
         };
 
-        ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, LayerInfos.class, executer);
-        LayerInfos[] layerInfos = exec.get(trainingDataBatch);
+        ParallelExecution<TrainingData, LayerInfos> exec = new ParallelExecution<>(func, executer);
+        LayerInfos[] layerInfos = exec.getArr(trainingDataBatch, LayerInfos.class);
 
         updateWeights(layerInfos, learningRate, trainingDataSize);
         updateBiases(layerInfos, learningRate);

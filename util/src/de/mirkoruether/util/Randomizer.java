@@ -1,5 +1,6 @@
 package de.mirkoruether.util;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Randomizer
@@ -8,15 +9,50 @@ public class Randomizer
     {
     }
 
-    public static <T> T[] shuffle(T[] in, Class<T> clazz)
+    public static <T> LinqList<T> shuffle(LinqList<T> in)
     {
-        Random rand = new Random();
-        LinqList<ShuffleBox<T>> boxes = new LinqList<>(in)
-                .select((t) -> new ShuffleBox<>(t, rand));
+        return shuffleInPlace(new LinqList<>(in));
+    }
 
-        boxes.sort(null);
+    public static <T> LinqList<T> shuffleInPlace(LinqList<T> in)
+    {
+        Random r = new Random();
+        LinqList<ShuffleBox<T>> randList = new LinqList<>(in.size());
 
-        return boxes.select((b) -> b.getContent()).toArray(clazz);
+        for(T obj : in)
+        {
+            randList.add(new ShuffleBox<>(obj, r));
+        }
+        randList.sort(null);
+
+        for(int i = 0; i < in.size(); i++)
+        {
+            in.set(i, randList.get(i).getContent());
+        }
+        return in;
+    }
+
+    public static <T> T[] shuffleArr(T[] in)
+    {
+        return shuffleArrInPlace(Arrays.copyOf(in, in.length));
+    }
+
+    public static <T> T[] shuffleArrInPlace(T[] in)
+    {
+        Random r = new Random();
+        LinqList<ShuffleBox<T>> randList = new LinqList<>(in.length);
+
+        for(T obj : in)
+        {
+            randList.add(new ShuffleBox<>(obj, r));
+        }
+        randList.sort(null);
+
+        for(int i = 0; i < in.length; i++)
+        {
+            in[i] = randList.get(i).getContent();
+        }
+        return in;
     }
 
     private static class ShuffleBox<T> implements Comparable<ShuffleBox<?>>

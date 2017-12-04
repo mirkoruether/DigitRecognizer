@@ -1,6 +1,6 @@
 package de.mirkoruether.util;
 
-import java.lang.reflect.Array;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -9,53 +9,32 @@ import java.util.function.Function;
 public class ParallelExecution<T, R>
 {
     private final Function<T, R> func;
-    private final Function<Integer, R[]> arraySupplier;
     private final ExecutorService executor;
-
-    public ParallelExecution(Function<T, R> func, Function<Integer, R[]> arraySupplier, ExecutorService executor)
-    {
-        this.func = func;
-        this.arraySupplier = arraySupplier;
-        this.executor = executor;
-    }
-
-    public ParallelExecution(Function<T, R> func, Class<R> clazz, ExecutorService executor)
-    {
-        this(func, (i) -> newArray(clazz, i), executor);
-    }
 
     public ParallelExecution(Function<T, R> func, ExecutorService executor)
     {
-        this(func, (i) ->
-     {
-         throw new UnsupportedOperationException("No array supplier given!");
-     }, executor);
+        this.func = func;
+        this.executor = executor;
     }
 
-    public R[] get(T[] in)
+    public R[] getArr(T[] in, Class<R> clazz)
+    {
+        return getArr(in, clazz, 0);
+    }
+
+    public R[] getArr(T[] in, Class<R> clazz, long timeout)
+    {
+        return get(new LinqList<>(in), timeout).toArray(clazz);
+    }
+
+    public LinqList<R> get(List<T> in)
     {
         return get(in, 0);
     }
 
-    public R[] get(T[] in, long timeout)
+    public LinqList<R> get(List<T> in, long timeout)
     {
-        return get(in, arraySupplier.apply(in.length), timeout);
-    }
-
-    public R[] get(T[] in, R[] dest)
-    {
-        return get(in, dest, 0);
-    }
-
-    public R[] get(T[] in, R[] dest, long timeout)
-    {
-        return new Exec<T, R>().get(in, dest, timeout, executor, func);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T[] newArray(Class<T> clazz, int length)
-    {
-        return (T[])Array.newInstance(clazz, length);
+        return new Exec<T, R>().get(in, timeout, executor, func);
     }
 
     public static <T> T inExecutorF(Function<ExecutorService, T> func, int n)
@@ -81,24 +60,22 @@ public class ParallelExecution<T, R>
 
         private int finished = 0;
 
-        protected R[] get(T[] in, R[] dest, long timeout, ExecutorService executor, Function<T, R> func)
+        protected LinqList<R> get(List<T> in, long timeout, ExecutorService executor, Function<T, R> func)
         {
-            if(dest.length < in.length)
-            {
-                throw new ArrayIndexOutOfBoundsException("Destination array is to small");
-            }
-
             try
             {
-                for(int i = 0; i < in.length; i++)
+                LinqList<R> result = new LinqList<>(in.size());
+
+                for(int i = 0; i < in.size(); i++)
                 {
+                    result.add(null);
                     final int index = i;
                     executor.execute(() ->
                     {
-                        dest[index] = func.apply(in[index]);
+                        result.set(index, func.apply(in.get(index)));
                         synchronized(notifier)
                         {
-                            if(++finished == in.length)
+                            if(++finished == in.size())
                             {
                                 notifier.notifyAll();
                             }
@@ -108,14 +85,14 @@ public class ParallelExecution<T, R>
 
                 synchronized(notifier)
                 {
-                    if(finished == in.length)
+                    if(finished == in.size())
                     {
-                        return dest;
+                        return result;
                     }
                     notifier.wait(timeout);
                 }
 
-                return dest;
+                return result;
             }
             catch(InterruptedException ex)
             {

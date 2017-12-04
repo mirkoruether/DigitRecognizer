@@ -109,7 +109,7 @@ public class MNISTLoader
     {
         final NetOutputTest testFunc = (o, s) -> s.get(o.indexOfMaxium()) == 1.0;
 
-        trainData = Randomizer.shuffle(trainData, TrainingData.class);
+        Randomizer.shuffleArrInPlace(trainData);
 
         TrainingData[] training = new TrainingData[trainData.length - validationLength];
         TrainingData[] validationData = new TrainingData[validationLength];
@@ -176,10 +176,7 @@ public class MNISTLoader
         {
             ParallelExecution<File, DVector[]> pexec = new ParallelExecution<>(func, exec);
 
-            DVector[][] dest = new DVector[files.length][];
-            pexec.get(files, dest);
-
-            return dest;
+            return pexec.getArr(files, DVector[].class);
         }, 0);
     }
 
