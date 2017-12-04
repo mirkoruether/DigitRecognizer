@@ -183,6 +183,12 @@ public class LinqList<T> extends ArrayList<T>
         return func.apply(minObject(func));
     }
 
+    @Override
+    public LinqList<T> subList(int fromIndex, int toIndex)
+    {
+        return new LinqList<>(super.subList(fromIndex, toIndex));
+    }
+
     @SuppressWarnings("unchecked")
     public T[] toArray(Class<T> clazz)
     {

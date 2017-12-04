@@ -4,6 +4,7 @@ import de.mirkoruether.ann.ActivationFunction;
 import de.mirkoruether.ann.NetworkIO;
 import de.mirkoruether.ann.NeuralNetwork;
 import de.mirkoruether.ann.initialization.NormalizedGaussianInitialization;
+import de.mirkoruether.ann.intelligenttraining.IntelligentAbortConditionSet;
 import de.mirkoruether.ann.intelligenttraining.IntelligentEpochResult;
 import de.mirkoruether.ann.intelligenttraining.IntelligentTrainer;
 import de.mirkoruether.ann.training.MomentumSGDTrainer;
@@ -41,8 +42,14 @@ public class Test
         CostFunction costs = new TestingCostFunction(new CrossEntropyCosts(), MNIST.getTestData().getTest(), 1.5);
         MomentumSGDTrainer trainer = new MomentumSGDTrainer(net, 10, costs, new L2Regularization(3.0), 0.6);
 
+        IntelligentAbortConditionSet learningRateDecrease = new IntelligentAbortConditionSet()
+                .addNoImprovementTestAccuracy(2);
+
+        IntelligentAbortConditionSet abort = new IntelligentAbortConditionSet()
+                .addNoImprovementTestAccuracy(6);
+
         IntelligentTrainer it = new IntelligentTrainer(trainer, MNIST.getTrainingData(), MNIST.getValidationData(), MNIST.getTestData());
-        it.train(x -> logEpochResult(x), 0.1);
+        it.train(abort, x -> logEpochResult(x), 0.1, learningRateDecrease, 2.0);
 
         TestResult r = trainer.test(MNIST.getTestData());
         if(r.getAccuracy() > 0.98)

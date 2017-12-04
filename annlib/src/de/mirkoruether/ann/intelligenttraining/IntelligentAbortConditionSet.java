@@ -1,7 +1,6 @@
 package de.mirkoruether.ann.intelligenttraining;
 
 import de.mirkoruether.util.LinqList;
-import de.mirkoruether.util.RollingList;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -18,6 +17,11 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
     public IntelligentAbortConditionSet(Collection<? extends IntelligentAbortCondition> conditions)
     {
         this.conditions = new LinqList<>(conditions);
+    }
+
+    public void reset()
+    {
+        results.clear();
     }
 
     @Override
@@ -37,6 +41,19 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
     {
         conditions.add(con);
         return this;
+    }
+
+    public IntelligentAbortConditionSet addRolling(int count, RollingResultsCondition con)
+    {
+        return add((x) ->
+        {
+            if(results.size() < count)
+            {
+                return false;
+            }
+
+            return con.abort(results.subList(results.size() - count, results.size()));
+        });
     }
 
     public IntelligentAbortConditionSet addTimeLimit(long timeLimit)
@@ -71,62 +88,46 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
 
     public IntelligentAbortConditionSet addTestAccuracyStagnation(int epochs, double deltaAccuracy)
     {
-        return add(new RollingResultsCondition(epochs)
-        {
-            @Override
-            public boolean abort(RollingList<IntelligentEpochResult> results)
-            {
-                double max = results.maxValue(x -> x.getTestDataTestResult().getAccuracy());
-                double min = results.minValue(x -> x.getTestDataTestResult().getAccuracy());
+        return addRolling(epochs, (r) ->
+                  {
+                      double max = r.maxValue(x -> x.getTestDataTestResult().getAccuracy());
+                      double min = r.minValue(x -> x.getTestDataTestResult().getAccuracy());
 
-                return max - min < deltaAccuracy;
-            }
-        });
+                      return max - min < deltaAccuracy;
+                  });
     }
 
     public IntelligentAbortConditionSet addValidationAccuracyStagnation(int epochs, double deltaAccuracy)
     {
-        return add(new RollingResultsCondition(epochs)
-        {
-            @Override
-            public boolean abort(RollingList<IntelligentEpochResult> results)
-            {
-                double max = results.maxValue(x -> x.getValidationDataTestResult().getAccuracy());
-                double min = results.minValue(x -> x.getValidationDataTestResult().getAccuracy());
+        return addRolling(epochs, (r) ->
+                  {
+                      double max = r.maxValue(x -> x.getValidationDataTestResult().getAccuracy());
+                      double min = r.minValue(x -> x.getValidationDataTestResult().getAccuracy());
 
-                return max - min < deltaAccuracy;
-            }
-        });
+                      return max - min < deltaAccuracy;
+                  });
     }
 
     public IntelligentAbortConditionSet addAccuracyDeltaLimit(int epochs, double limit)
     {
-        return add(new RollingResultsCondition(epochs)
-        {
-            @Override
-            public boolean abort(RollingList<IntelligentEpochResult> results)
-            {
-                double maxTest = results.maxValue(x -> x.getTestDataTestResult().getAccuracy());
-                double minValidation = results.minValue(x -> x.getValidationDataTestResult().getAccuracy());
+        return addRolling(epochs, (r) ->
+                  {
+                      double maxTest = r.maxValue(x -> x.getTestDataTestResult().getAccuracy());
+                      double minValidation = r.minValue(x -> x.getValidationDataTestResult().getAccuracy());
 
-                return minValidation - maxTest >= limit;
-            }
-        });
+                      return minValidation - maxTest >= limit;
+                  });
     }
 
     public IntelligentAbortConditionSet addAccuracyFactorLimit(int epochs, double limit)
     {
-        return add(new RollingResultsCondition(epochs)
-        {
-            @Override
-            public boolean abort(RollingList<IntelligentEpochResult> results)
-            {
-                double maxTest = results.maxValue(x -> x.getTestDataTestResult().getAccuracy());
-                double minValidation = results.minValue(x -> x.getValidationDataTestResult().getAccuracy());
+        return addRolling(epochs, (r) ->
+                  {
+                      double maxTest = r.maxValue(x -> x.getTestDataTestResult().getAccuracy());
+                      double minValidation = r.minValue(x -> x.getValidationDataTestResult().getAccuracy());
 
-                return minValidation / maxTest <= limit;
-            }
-        });
+                      return minValidation / maxTest <= limit;
+                  });
     }
 
     public IntelligentAbortConditionSet addNoImprovement(int epochs, Function<IntelligentEpochResult, Double> indicator)
@@ -154,27 +155,8 @@ public class IntelligentAbortConditionSet implements IntelligentAbortCondition
         return addNoImprovement(epochs, x -> -1.0 * x.getValidationDataTestResult().getAverageCosts());
     }
 
-    public static abstract class RollingResultsCondition implements IntelligentAbortCondition
+    public static interface RollingResultsCondition
     {
-        private final RollingList<IntelligentEpochResult> results;
-
-        public RollingResultsCondition(int capacity)
-        {
-            this.results = new RollingList<>(capacity);
-        }
-
-        @Override
-        public boolean abort(IntelligentEpochResult result)
-        {
-            if(results.size() < results.getCapacity())
-            {
-                return false;
-            }
-
-            results.add(result);
-            return abort(results);
-        }
-
-        public abstract boolean abort(RollingList<IntelligentEpochResult> results);
+        public boolean abort(LinqList<IntelligentEpochResult> results);
     }
 }

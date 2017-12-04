@@ -5,7 +5,6 @@ import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TestResult;
 import de.mirkoruether.ann.training.TrainingData;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class IntelligentTrainer
 {
@@ -24,24 +23,26 @@ public class IntelligentTrainer
 
     public void train(Consumer<IntelligentEpochResult> log, double startLearningRate)
     {
-        final IntelligentAbortCondition abortCondition = new IntelligentAbortConditionSet()
+        final IntelligentAbortConditionSet abortCondition = new IntelligentAbortConditionSet()
                 .addNoImprovementTestAccuracy(6);
 
         train(abortCondition, log, startLearningRate);
     }
 
-    public void train(IntelligentAbortCondition abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate)
+    public void train(IntelligentAbortConditionSet abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate)
     {
         final double learningRateDivisor = 2.0;
-        final Supplier<IntelligentAbortCondition> learningRateLowering = ()
-                -> new IntelligentAbortConditionSet()
-                        .addNoImprovementTestAccuracy(2);
+        final IntelligentAbortConditionSet learningRateLowering = new IntelligentAbortConditionSet()
+                .addNoImprovementTestAccuracy(2);
 
         train(abortCondition, log, startLearningRate, learningRateLowering, learningRateDivisor);
     }
 
-    public void train(IntelligentAbortCondition abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate, Supplier<IntelligentAbortCondition> learningRateLowering, double learningRateDivisor)
+    public void train(IntelligentAbortConditionSet abortCondition, Consumer<IntelligentEpochResult> log, double startLearningRate, IntelligentAbortConditionSet learningRateLowering, double learningRateDivisor)
     {
+        abortCondition.reset();
+        learningRateLowering.reset();
+
         int epoch = 0;
         long startTime = System.currentTimeMillis();
 
@@ -49,16 +50,15 @@ public class IntelligentTrainer
         long lrStartTime = System.currentTimeMillis();
 
         double currLearningRate = startLearningRate;
-        IntelligentAbortCondition lrLowering = learningRateLowering.get();
         IntelligentEpochResult result = generateAndLogResult(0, Double.POSITIVE_INFINITY, startTime, 0, log);
         while(!abortCondition.abort(result))
         {
             IntelligentEpochResult lrResult = generateLrResult(result, epochWithLearningRate, lrStartTime);
 
-            if(lrLowering.abort(lrResult))
+            if(learningRateLowering.abort(lrResult))
             {
                 currLearningRate /= learningRateDivisor;
-                lrLowering = learningRateLowering.get();
+                learningRateLowering.reset();
 
                 epochWithLearningRate = 0;
                 lrStartTime = System.currentTimeMillis();
