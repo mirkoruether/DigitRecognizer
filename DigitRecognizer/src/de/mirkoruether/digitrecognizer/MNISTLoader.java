@@ -90,12 +90,19 @@ public class MNISTLoader
                                          File testImageFile, File testLabelFile,
                                          int validationLength)
     {
-        DVector[][] data = parallelImport(trainingImageFile, trainingLabelFile, testImageFile, testLabelFile);
+        try
+        {
+            DVector[][] data = parallelImport(trainingImageFile, trainingLabelFile, testImageFile, testLabelFile);
 
-        TrainingData[] trainData = buildTrainingData(data[0], data[1]);
-        TrainingData[] testData = buildTrainingData(data[2], data[3]);
+            TrainingData[] trainData = buildTrainingData(data[0], data[1]);
+            TrainingData[] testData = buildTrainingData(data[2], data[3]);
 
-        return buildMNIST(trainData, testData, validationLength);
+            return buildMNIST(trainData, testData, validationLength);
+        }
+        catch(Exception ex)
+        {
+            throw new RuntimeException("Error while loading MNIST data", ex);
+        }
     }
 
     /**
@@ -142,8 +149,15 @@ public class MNISTLoader
      */
     public static TrainingData[] loadTrainingData(File imageFile, File labelFile)
     {
-        DVector[][] data = parallelImport(imageFile, labelFile);
-        return buildTrainingData(data[0], data[1]);
+        try
+        {
+            DVector[][] data = parallelImport(imageFile, labelFile);
+            return buildTrainingData(data[0], data[1]);
+        }
+        catch(Exception ex)
+        {
+            throw new RuntimeException("Error while loading training data", ex);
+        }
     }
 
     /**

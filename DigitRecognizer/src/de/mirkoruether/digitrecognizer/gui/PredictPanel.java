@@ -118,7 +118,7 @@ public class PredictPanel extends JPanel
     {
         Thread t = new Thread(() ->
         {
-            DVector in = DigitManipulator.getAnnInput(im, (x) -> execOnEvtQueue(() -> drawPanel.setImage(x)), 1000);
+            DVector in = DigitManipulator.getAnnInput(im, (x) -> execOnEvtQueue(() -> drawPanel.setImage(x)), 500);
             execOnEvtQueue(() -> drawPanel.setImage(DigitManipulator.vectorToImage(in)));
 
             NeuralNetwork net = window.getNet();

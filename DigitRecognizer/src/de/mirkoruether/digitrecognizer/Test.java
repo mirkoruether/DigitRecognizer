@@ -47,7 +47,7 @@ public class Test
         TestResult r = trainer.test(MNIST.getTestData());
         if(r.getAccuracy() > 0.98)
         {
-            File f = new File(String.format("net_%.2f_percent_accuracy", r.getAccuracy() * 100.0).replace('.', '-') + ".zip");
+            File f = new File(String.format("net_%.2f_percent_accuracy", r.getAccuracy() * 100.0).replace('.', '-'));
             NetworkIO.saveNetworkData(net, f);
         }
     }

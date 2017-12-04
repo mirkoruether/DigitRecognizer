@@ -39,10 +39,18 @@ public class ParallelExecution<T, R>
 
     public static <T> T inExecutorF(Function<ExecutorService, T> func, int n)
     {
-        ExecutorService executer = n <= 0 ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(n);
-        T result = func.apply(executer);
-        executer.shutdown();
-        return result;
+        ExecutorService executer = null;
+
+        try
+        {
+            executer = n <= 0 ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(n);
+            return func.apply(executer);
+        }
+        finally
+        {
+            if(executer != null)
+                executer.shutdown();
+        }
     }
 
     public static void inExecutor(Consumer<ExecutorService> func, int n)
@@ -65,14 +73,27 @@ public class ParallelExecution<T, R>
             try
             {
                 LinqList<R> result = new LinqList<>(in.size());
+                LinqList<Throwable> errors = new LinqList<>(in.size());
 
                 for(int i = 0; i < in.size(); i++)
                 {
                     result.add(null);
+                    errors.add(null);
                     final int index = i;
                     executor.execute(() ->
                     {
-                        result.set(index, func.apply(in.get(index)));
+                        R r = null;
+
+                        try
+                        {
+                            r = func.apply(in.get(index));
+                        }
+                        catch(Throwable t)
+                        {
+                            errors.set(index, t);
+                        }
+
+                        result.set(index, r);
                         synchronized(notifier)
                         {
                             if(++finished == in.size())
@@ -87,17 +108,28 @@ public class ParallelExecution<T, R>
                 {
                     if(finished == in.size())
                     {
-                        return result;
+                        return doReturn(result, errors);
                     }
                     notifier.wait(timeout);
                 }
 
-                return result;
+                return doReturn(result, errors);
             }
             catch(InterruptedException ex)
             {
                 throw new RuntimeException("Interrupted!", ex);
             }
+        }
+
+        private LinqList<R> doReturn(LinqList<R> result, LinqList<Throwable> errors)
+        {
+            LinqList<Throwable> realErrors = errors.where(t -> t != null);
+            if(!realErrors.isEmpty())
+            {
+                throw new MultipleErrorsException("Multiple errors occured during parallel execution",
+                                                  realErrors.toArray(Throwable.class));
+            }
+            return result;
         }
     }
 }

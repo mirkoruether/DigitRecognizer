@@ -14,15 +14,19 @@ import de.mirkoruether.digitrecognizer.MNISTLoader;
 import de.mirkoruether.util.Stopwatch;
 import java.awt.EventQueue;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.function.Supplier;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 
 public class Window extends JFrame
 {
     private static final long serialVersionUID = -7431265748893293519L;
 
-    private static final File NET_FILE = new File("net.zip");
+    private static final File NET_FILE = new File("net");
     private static final String TITLEPATTEN = "Ziffernerkenner - %s";
 
     private final static int VALIDATION_LENGTH = 0;
@@ -51,15 +55,47 @@ public class Window extends JFrame
 
     public void initNet()
     {
-        if(NET_FILE.exists())
+        try
         {
-            net = NetworkIO.loadNetwork(NET_FILE, ActivationFunction.logistic());
+            if(NET_FILE.exists())
+            {
+                net = NetworkIO.loadNetwork(NET_FILE, ActivationFunction.logistic());
+            }
+            else
+            {
+                net = trainNet();
+                NetworkIO.saveNetworkData(net, NET_FILE);
+            }
         }
-        else
+        catch(Throwable t)
         {
-            net = trainNet();
-            NetworkIO.saveNetworkData(net, NET_FILE);
+            error(t);
         }
+    }
+
+    public void error(Throwable t)
+    {
+        final String messageStart = "Es ist ein Fehler aufgetreten.\n"
+                                    + "Moegliche Ursachen:\n"
+                                    + "- Die 'net' Datei ist fehlerhaft\n"
+                                    + "> Loeschen Sie die 'net'-Datei. Das Programm wird beim naechsten Start ein neues Netz trainieren\n"
+                                    + "- Es wurde versucht ein neues Netz zu trainieren, aber die Trainingsdaten konnten nicht gefunden werden\n"
+                                    + "> Stellen Sie sicher, dass der 'data'-Ordner exisitert und die benoetigten Dateien enthaelt ODER\n"
+                                    + "> Legen sie eine gueltige 'net'-Datei in das Arbeitsverzeichnis\n"
+                                    + "\n";
+        String s = "";
+        try(StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw))
+        {
+            t.printStackTrace(pw);
+            s = sw.toString();
+        }
+        catch(IOException ex)
+        {
+        }
+
+        JOptionPane.showMessageDialog(null, messageStart + s, "Ein Fehler ist aufgetreten", JOptionPane.ERROR_MESSAGE);
+        dispose();
     }
 
     private NeuralNetwork trainNet()
@@ -87,11 +123,6 @@ public class Window extends JFrame
     public NeuralNetwork getNet()
     {
         return net;
-    }
-
-    public void setNet(NeuralNetwork net)
-    {
-        this.net = net;
     }
 
     private void timeFunc(String name, Runnable func)
@@ -123,7 +154,7 @@ public class Window extends JFrame
 
     public static void main(String[] args)
     {
-        NET_FILE.delete();
+        //NET_FILE.delete();
 
         EventQueue.invokeLater(() ->
         {
