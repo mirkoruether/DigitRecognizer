@@ -2,7 +2,7 @@ package de.mirkoruether.ann;
 
 import de.mirkoruether.ann.initialization.NetLayerInitialization;
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.linalg.SizeException;
 
 public class NeuralNetwork
@@ -24,14 +24,14 @@ public class NeuralNetwork
         }
     }
 
-    public DVector feedForward(DVector in)
+    public DRowVector feedForward(DRowVector in)
     {
         if(in.getLength() != getInputSize())
         {
             throw new SizeException("Wrong input size!");
         }
 
-        DVector result = in;
+        DRowVector result = in;
         for(NetworkLayer layer : layers)
         {
             result = layer.feedForward(result);
@@ -39,15 +39,15 @@ public class NeuralNetwork
         return result;
     }
 
-    public DetailedResult feedForwardDetailed(DVector in)
+    public DetailedResult feedForwardDetailed(DRowVector in)
     {
         if(in.getLength() != getInputSize())
         {
             throw new SizeException("Wrong input size!");
         }
 
-        DVector[] act = new DVector[layers.length + 1];
-        DVector[] wIs = new DVector[layers.length];
+        DRowVector[] act = new DRowVector[layers.length + 1];
+        DRowVector[] wIs = new DRowVector[layers.length];
 
         act[0] = in;
         for(int i = 0; i < layers.length; i++)
@@ -89,9 +89,9 @@ public class NeuralNetwork
         return layers[layers.length - 1];
     }
 
-    public DVector[] getBiases()
+    public DRowVector[] getBiases()
     {
-        DVector[] result = new DVector[layers.length];
+        DRowVector[] result = new DRowVector[layers.length];
         for(int i = 0; i < result.length; i++)
         {
             result[i] = layers[i].getBiases();

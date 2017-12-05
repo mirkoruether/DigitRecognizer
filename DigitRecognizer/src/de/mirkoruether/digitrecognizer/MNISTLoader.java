@@ -12,7 +12,7 @@ package de.mirkoruether.digitrecognizer;
 import de.mirkoruether.ann.training.NetOutputTest;
 import de.mirkoruether.ann.training.TestDataSet;
 import de.mirkoruether.ann.training.TrainingData;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.util.ParallelExecution;
 import de.mirkoruether.util.Randomizer;
 import java.io.File;
@@ -92,7 +92,7 @@ public class MNISTLoader
     {
         try
         {
-            DVector[][] data = parallelImport(trainingImageFile, trainingLabelFile, testImageFile, testLabelFile);
+            DRowVector[][] data = parallelImport(trainingImageFile, trainingLabelFile, testImageFile, testLabelFile);
 
             TrainingData[] trainData = buildTrainingData(data[0], data[1]);
             TrainingData[] testData = buildTrainingData(data[2], data[3]);
@@ -151,7 +151,7 @@ public class MNISTLoader
     {
         try
         {
-            DVector[][] data = parallelImport(imageFile, labelFile);
+            DRowVector[][] data = parallelImport(imageFile, labelFile);
             return buildTrainingData(data[0], data[1]);
         }
         catch(Exception ex)
@@ -166,7 +166,7 @@ public class MNISTLoader
      * @param labels Labels
      * @return TrainingData array
      */
-    private static TrainingData[] buildTrainingData(DVector[] images, DVector[] labels)
+    private static TrainingData[] buildTrainingData(DRowVector[] images, DRowVector[] labels)
     {
         if(images.length != labels.length)
         {
@@ -182,15 +182,15 @@ public class MNISTLoader
         return result;
     }
 
-    private static DVector[][] parallelImport(File... files)
+    private static DRowVector[][] parallelImport(File... files)
     {
-        final Function<File, DVector[]> func = (f) -> importData(f);
+        final Function<File, DRowVector[]> func = (f) -> importData(f);
 
         return ParallelExecution.inExecutorF((exec) ->
         {
-            ParallelExecution<File, DVector[]> pexec = new ParallelExecution<>(func, exec);
+            ParallelExecution<File, DRowVector[]> pexec = new ParallelExecution<>(func, exec);
 
-            return pexec.getArr(files, DVector[].class);
+            return pexec.getArr(files, DRowVector[].class);
         }, 0);
     }
 
@@ -200,7 +200,7 @@ public class MNISTLoader
      * @param file filename e.g. "train-images-idx3-ubyte.gz"
      * @return imported data
      */
-    private static DVector[] importData(File file)
+    private static DRowVector[] importData(File file)
     {
         try
         {
@@ -243,17 +243,17 @@ public class MNISTLoader
      * @return imported labels
      * @throws IOException error while reading file
      */
-    private static DVector[] importLabelFile(GZIPInputStream gzip) throws IOException
+    private static DRowVector[] importLabelFile(GZIPInputStream gzip) throws IOException
     {
         byte[] itemCountBytes = new byte[4];
         gzip.read(itemCountBytes);
         int itemCount = bytesToInt(itemCountBytes);
-        DVector[] data = new DVector[itemCount];
+        DRowVector[] data = new DRowVector[itemCount];
         for(int i = 0; i < itemCount; i++)
         {
             double[] vec = new double[10];
             vec[gzip.read()] = 1.0;
-            data[i] = new DVector(vec);
+            data[i] = new DRowVector(vec);
         }
         return data;
     }
@@ -265,7 +265,7 @@ public class MNISTLoader
      * @return imported images
      * @throws IOException error while reading file
      */
-    private static DVector[] importImageFile(GZIPInputStream gzip) throws IOException
+    private static DRowVector[] importImageFile(GZIPInputStream gzip) throws IOException
     {
         byte[] infoBytes = new byte[4];
         gzip.read(infoBytes);
@@ -275,7 +275,7 @@ public class MNISTLoader
         gzip.read(infoBytes);
         int colCount = bytesToInt(infoBytes);
 
-        DVector[] data = new DVector[itemCount];
+        DRowVector[] data = new DRowVector[itemCount];
         int pixelCount = rowCount * colCount;
         for(int i = 0; i < itemCount; i++)
         {
@@ -284,7 +284,7 @@ public class MNISTLoader
             {
                 vec[j] = gzip.read() / 255.0;
             }
-            data[i] = new DVector(vec);
+            data[i] = new DRowVector(vec);
         }
 
         return data;

@@ -1,7 +1,7 @@
 package de.mirkoruether.digitrecognizer.gui;
 
 import de.mirkoruether.ann.NeuralNetwork;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -118,7 +118,7 @@ public class PredictPanel extends JPanel
     {
         Thread t = new Thread(() ->
         {
-            DVector in = DigitManipulator.getAnnInput(im, (x) -> execOnEvtQueue(() -> drawPanel.setImage(x)), 500);
+            DRowVector in = DigitManipulator.getAnnInput(im, (x) -> execOnEvtQueue(() -> drawPanel.setImage(x)), 500);
             execOnEvtQueue(() -> drawPanel.setImage(DigitManipulator.vectorToImage(in)));
 
             NeuralNetwork net = window.getNet();
@@ -135,7 +135,7 @@ public class PredictPanel extends JPanel
                 return;
             }
 
-            DVector result = net.feedForward(in);
+            DRowVector result = net.feedForward(in);
             execOnEvtQueue(() -> setValues(result.toArray()));
         });
         t.start();

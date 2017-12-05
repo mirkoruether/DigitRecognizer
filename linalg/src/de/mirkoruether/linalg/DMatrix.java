@@ -114,6 +114,34 @@ public class DMatrix implements Serializable
         return this;
     }
 
+    public DMatrix scalarMul(double r)
+    {
+        return getDuplicate().scalarMulInPlace(r);
+    }
+
+    public DMatrix scalarMulInPlace(double r)
+    {
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] *= r;
+        }
+        return this;
+    }
+
+    public DMatrix scalarDiv(double r)
+    {
+        return getDuplicate().scalarDivInPlace(r);
+    }
+
+    public DMatrix scalarDivInPlace(double r)
+    {
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] /= r;
+        }
+        return this;
+    }
+
     public DMatrix add(DMatrix other)
     {
         return getDuplicate().addInPlace(other);
@@ -122,6 +150,11 @@ public class DMatrix implements Serializable
     public DMatrix addInPlace(DMatrix other)
     {
         assertSameSize(other);
+        return uncheckedAddInPlace(other);
+    }
+
+    protected DMatrix uncheckedAddInPlace(DMatrix other)
+    {
         for(int i = 0; i < data.length; i++)
         {
             data[i] += other.data[i];
@@ -137,23 +170,14 @@ public class DMatrix implements Serializable
     public DMatrix subInPlace(DMatrix other)
     {
         assertSameSize(other);
+        return uncheckedSubInPlace(other);
+    }
+
+    protected DMatrix uncheckedSubInPlace(DMatrix other)
+    {
         for(int i = 0; i < data.length; i++)
         {
             data[i] -= other.data[i];
-        }
-        return this;
-    }
-
-    public DMatrix scalarMul(double r)
-    {
-        return getDuplicate().scalarMulInPlace(r);
-    }
-
-    public DMatrix scalarMulInPlace(double r)
-    {
-        for(int i = 0; i < data.length; i++)
-        {
-            data[i] *= r;
         }
         return this;
     }
@@ -166,6 +190,11 @@ public class DMatrix implements Serializable
     public DMatrix elementWiseMulInPlace(DMatrix other)
     {
         assertSameSize(other);
+        return uncheckedElementWiseMulInPlace(other);
+    }
+
+    protected DMatrix uncheckedElementWiseMulInPlace(DMatrix other)
+    {
         for(int i = 0; i < data.length; i++)
         {
             data[i] *= other.data[i];
@@ -181,6 +210,11 @@ public class DMatrix implements Serializable
     public DMatrix elementWiseDivInPlace(DMatrix other)
     {
         assertSameSize(other);
+        return uncheckedElementWiseDivInPlace(other);
+    }
+
+    protected DMatrix uncheckedElementWiseDivInPlace(DMatrix other)
+    {
         for(int i = 0; i < data.length; i++)
         {
             data[i] /= other.data[i];
@@ -261,21 +295,25 @@ public class DMatrix implements Serializable
         }
     }
 
-    public DVector asRowVector()
+    public DRowVector asRowVector()
     {
-        assertRowVector();
-        return new DVector(this);
+        return new DRowVector(this);
     }
 
-    public DVector toVectorDuplicate()
+    public DColumnVector asColumnVector()
+    {
+        return new DColumnVector(this);
+    }
+
+    public DRowVector toRowVectorDuplicate()
     {
         if(isRowVector())
         {
-            return new DVector(getDuplicate());
+            return new DRowVector(getDuplicate());
         }
         else if(isColumnVector())
         {
-            return new DVector(transpose());
+            return new DRowVector(transpose());
         }
         else
         {
@@ -283,14 +321,30 @@ public class DMatrix implements Serializable
         }
     }
 
-    public DVector getRowAsVector(int row)
+    public DColumnVector toColumnVectorDuplicate()
     {
-        return subMatrix(row, 1, 0, getColumnCount()).toVectorDuplicate();
+        if(isColumnVector())
+        {
+            return new DColumnVector(getDuplicate());
+        }
+        else if(isRowVector())
+        {
+            return new DColumnVector(transpose());
+        }
+        else
+        {
+            throw new SizeException("Matrix is no colum or row vector");
+        }
     }
 
-    public DVector getColumnAsVector(int column)
+    public DRowVector getRowAsVector(int row)
     {
-        return subMatrix(0, getRowCount(), column, 1).toVectorDuplicate();
+        return subMatrix(row, 1, 0, getColumnCount()).asRowVector();
+    }
+
+    public DColumnVector getColumnAsVector(int column)
+    {
+        return subMatrix(0, getRowCount(), column, 1).asColumnVector();
     }
 
     public boolean isScalar()
@@ -363,7 +417,7 @@ public class DMatrix implements Serializable
     {
         assertSquare();
 
-        if(getColumnCount() == 1)
+        if(isScalar())
             return this.toScalar();
 
         double result = 0;
@@ -414,88 +468,64 @@ public class DMatrix implements Serializable
         return result;
     }
 
-    public DMatrix append(DMatrix matrix, Side side)
+    public DMatrix append(DMatrix other, Side side)
     {
         switch(side)
         {
             case Right:
-                return appendRight(matrix);
+                return appendRight(other);
             case Bottom:
-                return appendBottom(matrix);
+                return appendBottom(other);
             case Left:
-                return matrix.appendRight(this);
+                return other.appendRight(this);
             case Top:
-                return matrix.appendBottom(this);
+                return other.appendBottom(this);
             default:
                 throw new IllegalArgumentException("Unknown side");
         }
     }
 
-    protected DMatrix appendRight(DMatrix matrix)
+    protected DMatrix appendRight(DMatrix other)
     {
-        if(matrix.getRowCount() != getRowCount())
+        if(other.getRowCount() != getRowCount())
             throw new SizeException("Could not append matrix, sizes do not fit.");
 
-        DMatrix result = new DMatrix(getRowCount(), getColumnCount() + matrix.getColumnCount());
-        for(int i = 0; i < getRowCount(); i++)
+        double[] newData = new double[data.length + other.data.length];
+        int newColumns = columns + other.columns;
+
+        for(int i = 0; i < rows; i++)
         {
-            for(int j = 0; j < getColumnCount(); j++)
-            {
-                result.put(i, j, get(i, j));
-            }
-            for(int j = getColumnCount(); j < getColumnCount() + matrix.getColumnCount(); j++)
-            {
-                result.put(i, j, matrix.get(i, j - getColumnCount()));
-            }
+            System.arraycopy(data, i * columns, newData, i * newColumns, columns);
+            System.arraycopy(other.data, i * other.columns, newData, i * newColumns + columns, other.columns);
         }
-        return result;
+
+        return new DMatrix(newData, newColumns);
     }
 
-    protected DMatrix appendBottom(DMatrix table)
+    protected DMatrix appendBottom(DMatrix other)
     {
-        if(table.getColumnCount() != getColumnCount())
+        if(other.getColumnCount() != getColumnCount())
             throw new SizeException("Could not append matrix, sizes do not fit.");
 
-        DMatrix result = new DMatrix(getRowCount() + table.getRowCount(), getColumnCount());
-        for(int j = 0; j < getColumnCount(); j++)
-        {
-            for(int i = 0; i < getRowCount(); i++)
-            {
-                result.put(i, j, get(i, j));
-            }
-            for(int i = getRowCount(); i < getRowCount() + table.getRowCount(); i++)
-            {
-                result.put(i, j, table.get(i - getRowCount(), j));
-            }
-        }
-        return result;
-    }
-
-    public static enum Side
-    {
-        Right,
-        Bottom,
-        Left,
-        Top
+        double[] newData = new double[data.length + other.data.length];
+        System.arraycopy(data, 0, newData, 0, data.length);
+        System.arraycopy(other.data, 0, newData, data.length, other.data.length);
+        return new DMatrix(newData, columns);
     }
 
     @Override
     public boolean equals(Object obj)
     {
+        if(this == obj)
+            return true;
+
         if(obj instanceof DMatrix)
         {
             DMatrix other = (DMatrix)obj;
-
-            if(!sameSize(other))
-            {
-                return false;
-            }
-            else
-            {
-                return Arrays.equals(data, other.data);
-            }
+            return sameSize(other) && Arrays.equals(data, other.data);
         }
-        return super.equals(obj);
+
+        return false;
     }
 
     @Override
@@ -581,5 +611,13 @@ public class DMatrix implements Serializable
             hash = 83 * hash + this.columns;
             return hash;
         }
+    }
+
+    public static enum Side
+    {
+        Right,
+        Bottom,
+        Left,
+        Top
     }
 }

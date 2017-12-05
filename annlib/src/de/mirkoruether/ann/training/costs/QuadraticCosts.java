@@ -1,12 +1,12 @@
 package de.mirkoruether.ann.training.costs;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.linalg.SizeException;
 
 public class QuadraticCosts implements CostFunction
 {
     @Override
-    public double calculateCosts(DVector netOutput, DVector solution)
+    public double calculateCosts(DRowVector netOutput, DRowVector solution)
     {
         if(netOutput.getLength() != solution.getLength())
         {
@@ -22,7 +22,7 @@ public class QuadraticCosts implements CostFunction
     }
 
     @Override
-    public DVector calculateGradient(DVector netOutput, DVector solution)
+    public DRowVector calculateGradient(DRowVector netOutput, DRowVector solution)
     {
         return netOutput.sub(solution);
     }

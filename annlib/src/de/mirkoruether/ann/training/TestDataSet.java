@@ -1,6 +1,6 @@
 package de.mirkoruether.ann.training;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public class TestDataSet
 {
@@ -13,7 +13,7 @@ public class TestDataSet
         this.test = test;
     }
 
-    public boolean test(DVector netOutput, DVector solution)
+    public boolean test(DRowVector netOutput, DRowVector solution)
     {
         return test.test(netOutput, solution);
     }

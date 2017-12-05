@@ -1,13 +1,13 @@
 package de.mirkoruether.ann.initialization;
 
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import java.util.Random;
 
 public class GaussianInitialization implements NetLayerInitialization
 {
     @Override
-    public DVector initBiases(int size)
+    public DRowVector initBiases(int size)
     {
         Random rand = new Random();
         double[] values = new double[size];
@@ -15,7 +15,7 @@ public class GaussianInitialization implements NetLayerInitialization
         {
             values[i] = rand.nextGaussian();
         }
-        return new DVector(values);
+        return new DRowVector(values);
     }
 
     @Override

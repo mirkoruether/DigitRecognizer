@@ -6,7 +6,7 @@ import de.mirkoruether.ann.training.costs.CostFunction;
 import de.mirkoruether.ann.training.regularization.CostFunctionRegularization;
 import de.mirkoruether.linalg.DFunction;
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.util.ParallelExecution;
 import de.mirkoruether.util.Randomizer;
 import java.util.Objects;
@@ -58,7 +58,7 @@ public class StochasticGradientDescentTrainer
         int correct = 0;
         for(TrainingData d : testData.getData())
         {
-            DVector out = net.feedForward(d.getInput());
+            DRowVector out = net.feedForward(d.getInput());
             costSum += costs.calculateCosts(out, d.getSolution());
             correct += testData.test(out, d.getSolution()) ? 1 : 0;
         }
@@ -109,9 +109,9 @@ public class StochasticGradientDescentTrainer
         updateBiases(layerInfos, learningRate);
     }
 
-    protected DVector[] calculateErrorVectors(DetailedResult netResult, DVector solution)
+    protected DRowVector[] calculateErrorVectors(DetailedResult netResult, DRowVector solution)
     {
-        DVector[] error = new DVector[net.getLayerCount()];
+        DRowVector[] error = new DRowVector[net.getLayerCount()];
 
         int L = net.getLayerCount() - 1;
 
@@ -120,14 +120,14 @@ public class StochasticGradientDescentTrainer
         for(int la = L - 1; la >= 0; la--)
         {
             error[la] = error[la + 1].matrixMul(net.getLayer(la + 1).getWeights().transpose())
-                    .toVectorDuplicate()
+                    .toRowVectorDuplicate()
                     .elementWiseMulInPlace(calculateActivationDerivativeAtLayer(netResult, la));
         }
 
         return error;
     }
 
-    protected DVector calculateActivationDerivativeAtLayer(DetailedResult netOutput, int layer)
+    protected DRowVector calculateActivationDerivativeAtLayer(DetailedResult netOutput, int layer)
     {
         DFunction activationFuncDerivative = getNet().getLayer(layer).getActivationFunction().f_derivative;
         return netOutput.getWeightedInput(layer).applyFunctionElementWise(activationFuncDerivative);
@@ -174,7 +174,7 @@ public class StochasticGradientDescentTrainer
         for(int la = 0; la < net.getLayerCount(); la++)
         {
             // sum(x, delta[x,l])
-            DVector sum = layerInfos[0].getError(la).getDuplicate();
+            DRowVector sum = layerInfos[0].getError(la).getDuplicate();
             for(int x = 1; x < layerInfos.length; x++)
             {
                 sum.addInPlace(layerInfos[x].getError(la));
@@ -225,31 +225,31 @@ public class StochasticGradientDescentTrainer
 
     protected static class LayerInfos
     {
-        private final DVector[] lastActivations;
-        private final DVector[] errors;
+        private final DRowVector[] lastActivations;
+        private final DRowVector[] errors;
 
-        protected LayerInfos(DVector[] lastActivations, DVector[] errors)
+        protected LayerInfos(DRowVector[] lastActivations, DRowVector[] errors)
         {
             this.lastActivations = lastActivations;
             this.errors = errors;
         }
 
-        public DVector[] getLastActivations()
+        public DRowVector[] getLastActivations()
         {
             return lastActivations;
         }
 
-        public DVector[] getErrors()
+        public DRowVector[] getErrors()
         {
             return errors;
         }
 
-        public DVector getError(int layer)
+        public DRowVector getError(int layer)
         {
             return errors[layer];
         }
 
-        public DVector getAct(int layerPlusOne)
+        public DRowVector getAct(int layerPlusOne)
         {
             return lastActivations[layerPlusOne];
         }

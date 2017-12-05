@@ -1,7 +1,7 @@
 package de.mirkoruether.ann.training.costs;
 
 import de.mirkoruether.ann.training.NetOutputTest;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public class TestingCostFunction implements CostFunction
 {
@@ -24,19 +24,19 @@ public class TestingCostFunction implements CostFunction
     }
 
     @Override
-    public double calculateCosts(DVector netOutput, DVector solution)
+    public double calculateCosts(DRowVector netOutput, DRowVector solution)
     {
         return baseFunc.calculateCosts(netOutput, solution) * (test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
     }
 
     @Override
-    public DVector calculateGradient(DVector netOutput, DVector solution)
+    public DRowVector calculateGradient(DRowVector netOutput, DRowVector solution)
     {
         return baseFunc.calculateGradient(netOutput, solution).scalarMulInPlace(test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
     }
 
     @Override
-    public DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
+    public DRowVector calculateErrorOfLastLayer(DRowVector netOutput, DRowVector solution, DRowVector lastLayerDerivativeActivation)
     {
         return baseFunc.calculateErrorOfLastLayer(netOutput, solution, lastLayerDerivativeActivation).scalarMulInPlace(test.test(netOutput, solution) ? factorIfRight : factorIfWrong);
     }

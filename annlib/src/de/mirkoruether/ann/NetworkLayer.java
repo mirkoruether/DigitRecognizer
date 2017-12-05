@@ -2,13 +2,13 @@ package de.mirkoruether.ann;
 
 import de.mirkoruether.ann.initialization.NetLayerInitialization;
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.linalg.SizeException;
 
 public class NetworkLayer
 {
     private final DMatrix weights;
-    private final DVector biases;
+    private final DRowVector biases;
     private final ActivationFunction activationFunction;
 
     public NetworkLayer(int outputSize, int inputSize, NetLayerInitialization init, ActivationFunction activationFunction)
@@ -16,7 +16,7 @@ public class NetworkLayer
         this(init.initWeights(outputSize, inputSize), init.initBiases(outputSize), activationFunction);
     }
 
-    public NetworkLayer(DMatrix weights, DVector biases, ActivationFunction activationFunction)
+    public NetworkLayer(DMatrix weights, DRowVector biases, ActivationFunction activationFunction)
     {
         if(biases.getLength() != weights.getColumnCount())
         {
@@ -28,15 +28,15 @@ public class NetworkLayer
         this.activationFunction = activationFunction;
     }
 
-    public DVector feedForward(DVector in)
+    public DRowVector feedForward(DRowVector in)
     {
         return calculateWeightedInput(in).applyFunctionElementWiseInPlace(activationFunction.f);
     }
 
-    public DVector calculateWeightedInput(DVector in)
+    public DRowVector calculateWeightedInput(DRowVector in)
     {
         return in.matrixMul(weights)
-                .toVectorDuplicate()
+                .toRowVectorDuplicate()
                 .addInPlace(biases);
     }
 
@@ -55,7 +55,7 @@ public class NetworkLayer
         return weights;
     }
 
-    public DVector getBiases()
+    public DRowVector getBiases()
     {
         return biases;
     }

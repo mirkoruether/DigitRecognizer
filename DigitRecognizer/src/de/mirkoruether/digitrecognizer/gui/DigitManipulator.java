@@ -1,6 +1,6 @@
 package de.mirkoruether.digitrecognizer.gui;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
@@ -16,7 +16,7 @@ public class DigitManipulator
 {
     private static final int OFFSET_TO_IMAGE_BORDER = 35;
 
-    public static DVector getAnnInput(BufferedImage im, Consumer<BufferedImage> con, int pause)
+    public static DRowVector getAnnInput(BufferedImage im, Consumer<BufferedImage> con, int pause)
     {
         BufferedImage im28x28 = scaleDownTo28x28(moveToCenterAndScale(im, con, pause));
         if(im28x28.getWidth() != 28 || im28x28.getHeight() != 28)
@@ -33,7 +33,7 @@ public class DigitManipulator
             int r = (rgbs[i] >> 24) & 0xFF;
             vec[i] = (r / 256.0);
         }
-        return new DVector(vec);
+        return new DRowVector(vec);
     }
 
     private static BufferedImage markCenterOfMassAndBounds(BufferedImage im, Point centerOfPixels, Rectangle bounds)
@@ -200,7 +200,7 @@ public class DigitManipulator
         return result;
     }
 
-    public static BufferedImage vectorToImage(DVector vec)
+    public static BufferedImage vectorToImage(DRowVector vec)
     {
         BufferedImage im = new BufferedImage(28, 28, BufferedImage.TYPE_INT_ARGB);
 

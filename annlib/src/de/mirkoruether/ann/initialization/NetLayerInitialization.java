@@ -1,11 +1,11 @@
 package de.mirkoruether.ann.initialization;
 
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public interface NetLayerInitialization
 {
-    public DVector initBiases(int size);
+    public DRowVector initBiases(int size);
 
     public DMatrix initWeights(int outputSize, int inputSize);
 }

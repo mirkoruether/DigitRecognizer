@@ -1,49 +1,49 @@
 package de.mirkoruether.ann;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public class DetailedResult
 {
-    private DVector[] weightedInputs;
-    private DVector[] activationsInclInput;
+    private DRowVector[] weightedInputs;
+    private DRowVector[] activationsInclInput;
 
-    public DetailedResult(DVector[] weightedInputs, DVector[] activationsInclInput)
+    public DetailedResult(DRowVector[] weightedInputs, DRowVector[] activationsInclInput)
     {
         this.weightedInputs = weightedInputs;
         this.activationsInclInput = activationsInclInput;
     }
 
-    public DVector[] getWeightedInputs()
+    public DRowVector[] getWeightedInputs()
     {
         return weightedInputs;
     }
 
-    public DVector getWeightedInput(int layer)
+    public DRowVector getWeightedInput(int layer)
     {
         return weightedInputs[layer];
     }
 
-    public void setWeightedInputs(DVector[] weightedInputs)
+    public void setWeightedInputs(DRowVector[] weightedInputs)
     {
         this.weightedInputs = weightedInputs;
     }
 
-    public DVector[] getActivationsInclInput()
+    public DRowVector[] getActivationsInclInput()
     {
         return activationsInclInput;
     }
 
-    public DVector getActivation(int layerPlusOne)
+    public DRowVector getActivation(int layerPlusOne)
     {
         return activationsInclInput[layerPlusOne];
     }
 
-    public DVector getNetOutput()
+    public DRowVector getNetOutput()
     {
         return activationsInclInput[activationsInclInput.length - 1];
     }
 
-    public void setActivationsInclInput(DVector[] activationsInclInput)
+    public void setActivationsInclInput(DRowVector[] activationsInclInput)
     {
         this.activationsInclInput = activationsInclInput;
     }

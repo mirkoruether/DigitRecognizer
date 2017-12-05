@@ -1,12 +1,12 @@
 package de.mirkoruether.ann.training.costs;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.linalg.SizeException;
 
 public class CrossEntropyCosts implements CostFunction
 {
     @Override
-    public double calculateCosts(DVector netOutput, DVector solution)
+    public double calculateCosts(DRowVector netOutput, DRowVector solution)
     {
         if(netOutput.getLength() != solution.getLength())
         {
@@ -24,18 +24,18 @@ public class CrossEntropyCosts implements CostFunction
     }
 
     @Override
-    public DVector calculateGradient(DVector netOutput, DVector solution)
+    public DRowVector calculateGradient(DRowVector netOutput, DRowVector solution)
     {
         int le = netOutput.getLength();
-        DVector a = netOutput;
-        DVector y = solution;
+        DRowVector a = netOutput;
+        DRowVector y = solution;
         // y/a - (1-y)/(1-a) element wise
-        DVector grad = y.elementWiseDiv(a).subInPlace(DVector.ones(le).subInPlace(y).elementWiseDiv(DVector.ones(le).subInPlace(a)));
+        DRowVector grad = y.elementWiseDiv(a).subInPlace(DRowVector.ones(le).subInPlace(y).elementWiseDiv(DRowVector.ones(le).subInPlace(a)));
         return grad;
     }
 
     @Override
-    public DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
+    public DRowVector calculateErrorOfLastLayer(DRowVector netOutput, DRowVector solution, DRowVector lastLayerDerivativeActivation)
     {
         return netOutput.sub(solution);
     }

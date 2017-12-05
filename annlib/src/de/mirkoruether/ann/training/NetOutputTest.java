@@ -1,8 +1,8 @@
 package de.mirkoruether.ann.training;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public interface NetOutputTest
 {
-    public boolean test(DVector netOutput, DVector solution);
+    public boolean test(DRowVector netOutput, DRowVector solution);
 }

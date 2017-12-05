@@ -1,7 +1,7 @@
 package de.mirkoruether.ann;
 
 import de.mirkoruether.linalg.DMatrix;
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 import de.mirkoruether.util.Serializer;
 import java.io.File;
 import java.io.Serializable;
@@ -16,7 +16,7 @@ public class NetworkIO
         saveNetworkData(net.getWeights(), net.getBiases(), f);
     }
 
-    public static void saveNetworkData(DMatrix[] weights, DVector[] biases, File f)
+    public static void saveNetworkData(DMatrix[] weights, DRowVector[] biases, File f)
     {
         if(biases.length != weights.length)
         {
@@ -38,7 +38,7 @@ public class NetworkIO
 
         for(int i = 0; i < lCount; i++)
         {
-            layers[i] = new NetworkLayer((DMatrix)arr[i], (DVector)arr[lCount + i], func);
+            layers[i] = new NetworkLayer((DMatrix)arr[i], (DRowVector)arr[lCount + i], func);
         }
         return new NeuralNetwork(layers);
     }

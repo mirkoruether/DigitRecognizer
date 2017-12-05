@@ -1,14 +1,14 @@
 package de.mirkoruether.ann.training.costs;
 
-import de.mirkoruether.linalg.DVector;
+import de.mirkoruether.linalg.DRowVector;
 
 public interface CostFunction
 {
-    public double calculateCosts(DVector netOutput, DVector solution);
+    public double calculateCosts(DRowVector netOutput, DRowVector solution);
 
-    public DVector calculateGradient(DVector netOutput, DVector solution);
+    public DRowVector calculateGradient(DRowVector netOutput, DRowVector solution);
 
-    public default DVector calculateErrorOfLastLayer(DVector netOutput, DVector solution, DVector lastLayerDerivativeActivation)
+    public default DRowVector calculateErrorOfLastLayer(DRowVector netOutput, DRowVector solution, DRowVector lastLayerDerivativeActivation)
     {
         return calculateGradient(netOutput, solution).elementWiseMulInPlace(lastLayerDerivativeActivation);
     }
