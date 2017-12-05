@@ -120,7 +120,7 @@ public class StochasticGradientDescentTrainer
         for(int la = L - 1; la >= 0; la--)
         {
             error[la] = error[la + 1].matrixMul(net.getLayer(la + 1).getWeights().transpose())
-                    .toRowVectorDuplicate()
+                    .asRowVector()
                     .elementWiseMulInPlace(calculateActivationDerivativeAtLayer(netResult, la));
         }
 

@@ -36,7 +36,7 @@ public class NetworkLayer
     public DRowVector calculateWeightedInput(DRowVector in)
     {
         return in.matrixMul(weights)
-                .toRowVectorDuplicate()
+                .asRowVector()
                 .addInPlace(biases);
     }
 

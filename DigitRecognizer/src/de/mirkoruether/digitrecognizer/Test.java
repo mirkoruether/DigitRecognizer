@@ -46,6 +46,7 @@ public class Test
                 .addNoImprovementTestAccuracy(2);
 
         IntelligentAbortConditionSet abort = new IntelligentAbortConditionSet()
+                .addTestAccuracyLimit(0.98)
                 .addNoImprovementTestAccuracy(6);
 
         IntelligentTrainer it = new IntelligentTrainer(trainer, MNIST.getTrainingData(), MNIST.getValidationData(), MNIST.getTestData());
