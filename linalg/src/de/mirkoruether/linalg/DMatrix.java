@@ -224,19 +224,30 @@ public class DMatrix implements Serializable
 
     public DMatrix matrixMul(DMatrix other)
     {
-        int n = getRowCount();
-        int bn = other.getRowCount();
-        int bm = other.getColumnCount();
+        //mat(l x m) * mat(m x n) -> mat(l x n); mat(rows x cols)
 
-        DMatrix C = new DMatrix(n, bm);
-
-        for(int i = 0; i < n; i++)
+        if(columns != other.rows)
         {
-            for(int k = 0; k < bn; k++)
+            throw new SizeException("Matrizes cannot be multiplied");
+        }
+
+        int l = rows;
+        int m = columns;
+        int n = other.columns;
+
+        DMatrix C = new DMatrix(l, n);
+
+        for(int i = 0; i < l; i++)
+        {
+            int aRow = i * m;
+            int cRow = i * n;
+            for(int k = 0; k < m; k++)
             {
-                for(int j = 0; j < bm; j++)
+                int bRow = k * n;
+                for(int j = 0; j < n; j++)
                 {
-                    C.put(i, j, C.get(i, j) + get(i, k) * other.get(k, j));
+                    C.data[cRow + j] += data[aRow + k]
+                                        * other.data[bRow + j];
                 }
             }
         }
@@ -423,7 +434,7 @@ public class DMatrix implements Serializable
         double result = 0;
         for(int i = 1; i < getRowCount(); i++)
         {
-            double summand = get(0, i) * crossOutColumnAndFirstRow(i).determinant();
+            double summand = get(i, 0) * crossOutFirstColumnAndRowNr(i).determinant();
             if(i % 2 == 0)
                 result += summand;
             else
@@ -432,24 +443,24 @@ public class DMatrix implements Serializable
         return result;
     }
 
-    private DMatrix crossOutColumnAndFirstRow(int columnNumber)
+    private DMatrix crossOutFirstColumnAndRowNr(int rowNumber)
     {
         DMatrix result;
         int newRC = getRowCount() - 1;
         int newCC = getColumnCount() - 1;
-        if(columnNumber == 0)
+        if(rowNumber == 0)
         {
             result = subMatrix(1, newRC, 1, newCC);
         }
-        else if(columnNumber == getColumnCount() - 1)
+        else if(rowNumber == newCC)
         {
-            result = subMatrix(1, newRC, 0, newCC);
+            result = subMatrix(0, newRC, 1, newCC);
         }
         else
         {
-            DMatrix matrixLeft = subMatrix(1, newRC, 0, columnNumber);
-            DMatrix matrixRight = subMatrix(1, newRC, columnNumber + 1, newCC - columnNumber);
-            result = matrixLeft.append(matrixRight, Side.Right);
+            DMatrix upper = subMatrix(0, rowNumber, 1, newCC);
+            DMatrix lower = subMatrix(rowNumber + 1, newRC - rowNumber, 1, newCC);
+            result = upper.appendBottom(lower);
         }
         return result;
     }
