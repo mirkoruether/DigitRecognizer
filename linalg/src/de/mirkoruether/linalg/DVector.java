@@ -1,7 +1,7 @@
 package de.mirkoruether.linalg;
 
+import java.util.Arrays;
 import java.util.Comparator;
-import org.jblas.DoubleMatrix;
 
 public class DVector extends DMatrix
 {
@@ -11,9 +11,9 @@ public class DVector extends DMatrix
      * Use 'new DMatrix(mat) toVectorDuplicate()' instead.
      * @param rowVectorMatrix
      */
-    protected DVector(DoubleMatrix rowVectorMatrix)
+    protected DVector(DMatrix rowVectorMatrix)
     {
-        super(rowVectorMatrix);
+        super(rowVectorMatrix.data, rowVectorMatrix.columns);
         assertRowVector();
     }
 
@@ -42,7 +42,7 @@ public class DVector extends DMatrix
 
     public double[] toArray()
     {
-        return inner.toArray();
+        return Arrays.copyOf(data, columns);
     }
 
     public int getLength()
@@ -135,7 +135,7 @@ public class DVector extends DMatrix
     @Override
     public DVector getDuplicate()
     {
-        return new DVector(inner.dup());
+        return new DVector(super.getDuplicate());
     }
 
     public double innerProduct(DVector other)

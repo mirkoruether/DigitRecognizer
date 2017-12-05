@@ -3,7 +3,7 @@ package de.mirkoruether.ann;
 import de.mirkoruether.ann.initialization.NetLayerInitialization;
 import de.mirkoruether.linalg.DMatrix;
 import de.mirkoruether.linalg.DVector;
-import org.jblas.exceptions.SizeException;
+import de.mirkoruether.linalg.SizeException;
 
 public class NetworkLayer
 {

@@ -1,32 +1,48 @@
 package de.mirkoruether.linalg;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import org.jblas.DoubleMatrix;
-import org.jblas.exceptions.SizeException;
 
 public class DMatrix implements Serializable
 {
     private static final long serialVersionUID = 4110775618079402269L;
 
-    protected final DoubleMatrix inner;
+    protected final double[] data;
+    protected final int columns;
+    protected final int rows;
 
-    protected DMatrix(DoubleMatrix matrix)
+    protected DMatrix(double[] data, int columns)
     {
-        inner = matrix;
+        if(data.length % columns != 0)
+        {
+            throw new IllegalArgumentException("Unsupported data length");
+        }
+        this.data = data;
+        this.columns = columns;
+        this.rows = data.length / columns;
+    }
+
+    public DMatrix(int rows, int columns)
+    {
+        this.data = new double[rows * columns];
+        this.columns = columns;
+        this.rows = rows;
     }
 
     public DMatrix(double[][] content)
     {
-        inner = new DoubleMatrix(content);
-    }
+        this(content.length, content[0].length);
 
-    public DMatrix(int rows, int cols)
-    {
-        inner = new DoubleMatrix(rows, cols);
+        for(int i = 0; i < content.length; i++)
+        {
+            double[] row = content[i];
+            if(row.length != columns)
+            {
+                throw new IllegalArgumentException("Wrong row length at index " + i);
+            }
+            System.arraycopy(row, 0, data, columns * i, columns);
+        }
     }
 
     public DMatrix(Size size)
@@ -34,29 +50,19 @@ public class DMatrix implements Serializable
         this(size.getRows(), size.getColumns());
     }
 
-    public DoubleMatrix getInnerReference()
-    {
-        return inner;
-    }
-
-    public DoubleMatrix getInnerDuplicate()
-    {
-        return inner.dup();
-    }
-
     public DMatrix getDuplicate()
     {
-        return new DMatrix(inner.dup());
+        return new DMatrix(Arrays.copyOf(data, data.length), columns);
     }
 
     public int getRowCount()
     {
-        return inner.rows;
+        return rows;
     }
 
     public int getColumnCount()
     {
-        return inner.columns;
+        return columns;
     }
 
     public Size getSize()
@@ -64,14 +70,34 @@ public class DMatrix implements Serializable
         return new Size(getRowCount(), getColumnCount());
     }
 
+    public boolean sameSize(DMatrix other)
+    {
+        return getSize().equals(other.getSize());
+    }
+
+    public void assertSameSize(DMatrix other)
+    {
+        if(!sameSize(other))
+        {
+            throw new SizeException("Sizes differ");
+        }
+    }
+
+    private int index(int row, int column)
+    {
+        return columns * row + column;
+    }
+
     public double get(int row, int column)
     {
-        return inner.get(row, column);
+        validateIndices(row, column);
+        return data[index(row, column)];
     }
 
     public void put(int row, int column, double value)
     {
-        inner.put(row, column, value);
+        validateIndices(row, column);
+        data[index(row, column)] = value;
     }
 
     public DMatrix applyFunctionElementWise(DFunction func)
@@ -81,14 +107,10 @@ public class DMatrix implements Serializable
 
     public DMatrix applyFunctionElementWiseInPlace(DFunction func)
     {
-        mjBlasFunc(this, (a) ->
-           {
-               for(int i = 0; i < a.length; i++)
-               {
-                   a.put(i, func.apply(a.get(i)));
-               }
-               return a;
-           });
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] = func.apply(data[i]);
+        }
         return this;
     }
 
@@ -99,8 +121,11 @@ public class DMatrix implements Serializable
 
     public DMatrix addInPlace(DMatrix other)
     {
-        jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        mjBlasFunc(this, other, (a, b) -> a.addi(b));
+        assertSameSize(other);
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] += other.data[i];
+        }
         return this;
     }
 
@@ -111,8 +136,11 @@ public class DMatrix implements Serializable
 
     public DMatrix subInPlace(DMatrix other)
     {
-        jBlasExec(this, other, (a, b) -> a.assertSameSize(b));
-        mjBlasFunc(this, other, (a, b) -> a.subi(b));
+        assertSameSize(other);
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] -= other.data[i];
+        }
         return this;
     }
 
@@ -123,7 +151,10 @@ public class DMatrix implements Serializable
 
     public DMatrix scalarMulInPlace(double r)
     {
-        mjBlasFunc(this, (a) -> a.muli(r));
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] *= r;
+        }
         return this;
     }
 
@@ -134,7 +165,11 @@ public class DMatrix implements Serializable
 
     public DMatrix elementWiseMulInPlace(DMatrix other)
     {
-        mjBlasFunc(this, other, (a, b) -> a.muli(b));
+        assertSameSize(other);
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] *= other.data[i];
+        }
         return this;
     }
 
@@ -145,11 +180,15 @@ public class DMatrix implements Serializable
 
     public DMatrix elementWiseDivInPlace(DMatrix other)
     {
-        mjBlasFunc(this, other, (a, b) -> a.divi(b));
+        assertSameSize(other);
+        for(int i = 0; i < data.length; i++)
+        {
+            data[i] /= other.data[i];
+        }
         return this;
     }
 
-    public DMatrix matrixMulIt(DMatrix other)
+    public DMatrix matrixMul(DMatrix other)
     {
         int n = getRowCount();
         int bn = other.getRowCount();
@@ -170,27 +209,17 @@ public class DMatrix implements Serializable
         return C;
     }
 
-    public DMatrix matrixMulBlas(DMatrix other)
-    {
-        return mjBlasFunc(this, other, (a, b) -> a.mmul(b));
-    }
-
-    public DMatrix matrixMul(DMatrix other)
-    {
-        long complexity = getColumnCount() * ((long)getRowCount()) * other.getColumnCount();
-        if(complexity > 1000000000)
-        {
-            return matrixMulBlas(other);
-        }
-        else
-        {
-            return matrixMulIt(other);
-        }
-    }
-
     public DMatrix transpose()
     {
-        return mjBlasFunc(this, (a) -> a.transpose());
+        DMatrix other = new DMatrix(columns, rows);
+        for(int i = 0; i < rows; i++)
+        {
+            for(int j = 0; j < columns; j++)
+            {
+                other.put(j, i, get(i, j));
+            }
+        }
+        return other;
     }
 
     public boolean isVector()
@@ -232,15 +261,21 @@ public class DMatrix implements Serializable
         }
     }
 
+    public DVector asRowVector()
+    {
+        assertRowVector();
+        return new DVector(this);
+    }
+
     public DVector toVectorDuplicate()
     {
         if(isRowVector())
         {
-            return new DVector(getInnerDuplicate());
+            return new DVector(getDuplicate());
         }
         else if(isColumnVector())
         {
-            return new DVector(inner.transpose());
+            return new DVector(transpose());
         }
         else
         {
@@ -260,7 +295,7 @@ public class DMatrix implements Serializable
 
     public boolean isScalar()
     {
-        return inner.isScalar();
+        return data.length == 1;
     }
 
     public void assertScalar()
@@ -279,7 +314,12 @@ public class DMatrix implements Serializable
 
     public double[][] getContentCopy()
     {
-        return inner.toArray2();
+        double[][] result = new double[rows][columns];
+        for(int i = 0; i < rows; i++)
+        {
+            System.arraycopy(data, i * columns, result[i], 0, columns);
+        }
+        return result;
     }
 
     protected void validateIndices(int row, int col)
@@ -308,12 +348,20 @@ public class DMatrix implements Serializable
 
     public boolean isSquare()
     {
-        return inner.isSquare();
+        return rows == columns;
+    }
+
+    public void assertSquare()
+    {
+        if(!isSquare())
+        {
+            throw new SizeException("Matrix is no square matrix");
+        }
     }
 
     public double determinant()
     {
-        inner.assertSquare();
+        assertSquare();
 
         if(getColumnCount() == 1)
             return this.toScalar();
@@ -432,54 +480,32 @@ public class DMatrix implements Serializable
     }
 
     @Override
-    public int hashCode()
-    {
-        return inner.hashCode();
-    }
-
-    @Override
     public boolean equals(Object obj)
     {
         if(obj instanceof DMatrix)
         {
-            return inner.equals(innerOrNull((DMatrix)obj));
+            DMatrix other = (DMatrix)obj;
+
+            if(!sameSize(other))
+            {
+                return false;
+            }
+            else
+            {
+                return Arrays.equals(data, other.data);
+            }
         }
-        return false;
+        return super.equals(obj);
     }
 
-    public static <T> T jBlasFunc(DMatrix a, Function<DoubleMatrix, T> func)
+    @Override
+    public int hashCode()
     {
-        return func.apply(innerOrNull(a));
-    }
-
-    public static <T> T jBlasFunc(DMatrix a, DMatrix b, BiFunction<DoubleMatrix, DoubleMatrix, T> func)
-    {
-        return func.apply(innerOrNull(a), innerOrNull(b));
-    }
-
-    public static DMatrix mjBlasFunc(DMatrix a, Function<DoubleMatrix, DoubleMatrix> func)
-    {
-        return new DMatrix(func.apply(innerOrNull(a)));
-    }
-
-    public static DMatrix mjBlasFunc(DMatrix a, DMatrix b, BiFunction<DoubleMatrix, DoubleMatrix, DoubleMatrix> func)
-    {
-        return new DMatrix(func.apply(innerOrNull(a), innerOrNull(b)));
-    }
-
-    public static void jBlasExec(DMatrix a, Consumer<DoubleMatrix> con)
-    {
-        con.accept(innerOrNull(a));
-    }
-
-    public static void jBlasExec(DMatrix a, DMatrix b, BiConsumer<DoubleMatrix, DoubleMatrix> con)
-    {
-        con.accept(innerOrNull(a), innerOrNull(b));
-    }
-
-    private static DoubleMatrix innerOrNull(DMatrix m)
-    {
-        return m == null ? null : m.getInnerReference();
+        int hash = 7;
+        hash = 83 * hash + this.rows;
+        hash = 83 * hash + this.columns;
+        hash = 83 * hash + Arrays.hashCode(this.data);
+        return hash;
     }
 
     public static DMatrix ones(int rows, int columns)
@@ -534,6 +560,26 @@ public class DMatrix implements Serializable
         public void setColumns(int columns)
         {
             this.columns = columns;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if(obj instanceof Size)
+            {
+                Size b = (Size)obj;
+                return b.getColumns() == columns && b.getRows() == rows;
+            }
+            return super.equals(obj);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int hash = 7;
+            hash = 83 * hash + this.rows;
+            hash = 83 * hash + this.columns;
+            return hash;
         }
     }
 }
